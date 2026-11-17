@@ -1,0 +1,1228 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Suivre les stocks avec le cadencier</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;800;900&family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+:root{
+  --kraft:#C99B66; --kraft-2:#A87A47; --kraft-fonce:#6B4A26;
+  --encre:#1F2A44; --scotch:#F2C94C; --rouge:#C0392B; --vert:#1E7A4F; --bleu:#2D6CDF;
+  --papier:#FBF8F3; --carte:#FFFFFF; --trait:#E4DBCF; --texte:#1F2A44; --doux:#5E6475; --gris:#B9BCC4;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --papier:#15181F; --carte:#1F2430; --texte:#EEF0F5; --doux:#AEB4C2; --trait:#343B4B; --gris:#4A5060;
+    --vert:#4CC08A; --rouge:#EE6B5E; --scotch:#F5D36B; --encre:#EEF0F5; --bleu:#7AA7FF;
+  }
+}
+:root[data-theme="dark"]{
+  --papier:#15181F; --carte:#1F2430; --texte:#EEF0F5; --doux:#AEB4C2; --trait:#343B4B; --gris:#4A5060;
+  --vert:#4CC08A; --rouge:#EE6B5E; --scotch:#F5D36B; --encre:#EEF0F5; --bleu:#7AA7FF;
+}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-behavior:smooth;scroll-padding-top:4.5rem}
+body{margin:0;background:var(--papier);color:var(--texte);
+  font-family:"Atkinson Hyperlegible",system-ui,-apple-system,"Segoe UI",Arial,sans-serif;font-size:1.08rem;line-height:1.6}
+h1,h2,h3{font-family:"Archivo","Arial Narrow",system-ui,sans-serif;line-height:1.15;margin:0 0 .5em}
+h2{font-size:clamp(1.55rem,4vw,2.2rem);font-weight:900}
+h3{font-size:1.2rem;font-weight:800}
+a{color:var(--vert);text-underline-offset:3px}
+:focus-visible{outline:3px solid var(--scotch);outline-offset:3px}
+.wrap{max-width:66rem;margin:0 auto;padding:0 1rem}
+.lecture{max-width:46rem}
+
+/* ---------- Barre XP collante ---------- */
+.barre-xp{position:sticky;top:0;z-index:50;background:var(--encre);color:var(--papier);box-shadow:0 2px 10px rgba(0,0,0,.2)}
+.barre-xp .wrap{display:flex;align-items:center;gap:.8rem 1.2rem;flex-wrap:wrap;padding-top:.5rem;padding-bottom:.5rem}
+.xp-total{font-family:"Archivo",sans-serif;font-weight:900;font-size:1.15rem;position:relative;white-space:nowrap}
+.xp-niveau{font-weight:700;background:var(--scotch);color:#1F2A44;border-radius:999px;padding:.1rem .7rem;font-size:.92rem;white-space:nowrap}
+.jauge{flex:1 1 8rem;height:10px;background:rgba(255,255,255,.2);border-radius:5px;overflow:hidden;min-width:6rem}
+.jauge i{display:block;height:100%;width:0;background:var(--scotch);transition:width .6s cubic-bezier(.2,.9,.3,1.3)}
+.missions{font-size:.92rem;white-space:nowrap}
+#btnProf{font:inherit;font-size:.9rem;font-weight:700;border:2px solid var(--papier);background:transparent;color:var(--papier);border-radius:8px;padding:.25rem .7rem;cursor:pointer}
+body.mode-prof #btnProf{background:var(--scotch);color:#1F2A44;border-color:var(--scotch)}
+.pop-xp{position:absolute;left:0;top:-.2rem;color:var(--scotch);font-weight:900;pointer-events:none;animation:monte 1.2s ease-out forwards}
+@keyframes monte{from{opacity:1;transform:translateY(0)}to{opacity:0;transform:translateY(-1.8rem)}}
+:root[data-theme="dark"] .barre-xp,.barre-xp{color:#fff}
+@media (prefers-color-scheme:dark){.barre-xp{background:#0D1016}}
+
+/* ---------- En-tête carton animé ---------- */
+header.carton{background:var(--kraft);color:#2A1C0C;position:relative;overflow:hidden;border-bottom:8px solid var(--kraft-2)}
+header.carton::before{content:"";position:absolute;inset:0;background:repeating-linear-gradient(90deg,rgba(0,0,0,.035) 0 2px,transparent 2px 7px);pointer-events:none}
+header.carton .wrap{position:relative;padding-top:2.4rem;padding-bottom:2.4rem;display:grid;gap:1.5rem;grid-template-columns:minmax(0,1fr) auto;align-items:end}
+@media (max-width:760px){header.carton .wrap{grid-template-columns:1fr}.etagere{display:none}}
+.etiq{background:#FFFDF7;color:#1F2A44;border-radius:6px;max-width:40rem;padding:1.3rem 1.4rem;box-shadow:0 2px 0 rgba(0,0,0,.15),0 10px 24px rgba(60,35,10,.18);position:relative;animation:arrive .7s cubic-bezier(.2,.9,.3,1.2) both}
+@keyframes arrive{from{transform:translateY(-30px) rotate(-3deg);opacity:0}to{transform:none;opacity:1}}
+.etiq .haut{display:flex;flex-wrap:wrap;justify-content:space-between;gap:.5rem;font-size:.85rem;text-transform:uppercase;letter-spacing:.08em;font-weight:700;border-bottom:2px solid #1F2A44;padding-bottom:.5rem;margin-bottom:.8rem}
+.etiq h1{font-size:clamp(2rem,6.5vw,3.3rem);font-weight:900;margin:.2rem 0 .4rem;letter-spacing:-.01em}
+.etiq p{margin:.2rem 0}
+.etiq .ref{font-family:"Archivo",sans-serif;font-weight:600;color:#5E6475}
+.codebarre{height:2.2rem;margin-top:.9rem;background:repeating-linear-gradient(90deg,#1F2A44 0 2px,transparent 2px 4px,#1F2A44 4px 7px,transparent 7px 9px,#1F2A44 9px 10px,transparent 10px 13px);max-width:14rem}
+.tampon{position:absolute;right:1rem;top:-.8rem;transform:rotate(8deg);border:3px solid var(--rouge);color:var(--rouge);font-family:"Archivo",sans-serif;font-weight:900;padding:.2rem .6rem;border-radius:6px;background:#FFFDF7;font-size:.9rem;animation:tamponne .5s .8s both}
+@keyframes tamponne{from{transform:rotate(8deg) scale(2.4);opacity:0}to{transform:rotate(8deg) scale(1);opacity:1}}
+/* étagère avec cartons qui tombent */
+.etagere{position:relative;width:15rem;height:12rem}
+.etagere .planche{position:absolute;left:0;right:0;height:10px;background:#5A3C1C;border-radius:3px}
+.etagere .p1{bottom:6rem}.etagere .p2{bottom:0}
+.boite{position:absolute;width:3.6rem;height:3rem;background:#E0B98A;border:2px solid #8B6237;border-radius:3px;animation:tombe .8s cubic-bezier(.3,1.4,.5,1) both}
+.boite::after{content:"";position:absolute;left:50%;top:0;bottom:0;width:10px;transform:translateX(-50%);background:rgba(242,201,76,.75)}
+.boite b{position:absolute;bottom:3px;left:4px;font-size:.6rem;color:#4A3018;font-family:"Archivo",sans-serif}
+@keyframes tombe{from{transform:translateY(-14rem) rotate(-15deg);opacity:0}70%{opacity:1}to{transform:none}}
+.b1{left:.4rem;bottom:calc(6rem + 10px);animation-delay:.3s}.b2{left:4.4rem;bottom:calc(6rem + 10px);animation-delay:.55s}
+.b3{left:9rem;bottom:calc(6rem + 10px);animation-delay:.8s;height:2.4rem}
+.b4{left:1.6rem;bottom:10px;animation-delay:1.05s}.b5{left:5.8rem;bottom:10px;animation-delay:1.3s;width:4.4rem}
+.b6{left:10.6rem;bottom:10px;animation-delay:1.55s;height:2.4rem}
+
+nav.sommaire{display:flex;flex-wrap:wrap;gap:.5rem;margin-top:1.3rem;max-width:44rem}
+nav.sommaire a{background:#FFFDF7;color:#1F2A44;text-decoration:none;font-weight:700;padding:.45rem .8rem;border-radius:999px;border:2px solid #1F2A44;font-size:.95rem;transition:transform .15s,background .15s}
+nav.sommaire a:hover{background:var(--scotch);transform:translateY(-2px) rotate(-1deg)}
+
+/* ---------- Sections ---------- */
+section{padding:3rem 0;border-bottom:1px solid var(--trait)}
+.num{display:inline-grid;place-items:center;width:2.2rem;height:2.2rem;border-radius:50%;background:var(--encre);color:var(--papier);font-family:"Archivo",sans-serif;font-weight:900;margin-right:.5rem;font-size:1.05rem;vertical-align:.2em}
+.intro{color:var(--doux);font-size:1.1rem}
+.bloc{background:var(--carte);border:1px solid var(--trait);border-radius:12px;padding:1.1rem 1.2rem}
+.bloc p{margin:.3rem 0 0}
+.grille{display:grid;gap:1rem;grid-template-columns:repeat(auto-fit,minmax(15rem,1fr));margin-top:1rem}
+.retiens{background:color-mix(in srgb,var(--scotch) 22%,var(--carte));border:2px dashed var(--kraft-2);border-radius:12px;padding:1rem 1.2rem;margin:1.2rem 0}
+.retiens strong:first-child{display:block;font-family:"Archivo",sans-serif;font-size:1.05rem;margin-bottom:.2rem}
+.attention{border-left:6px solid var(--rouge);background:color-mix(in srgb,var(--rouge) 9%,var(--carte));padding:.9rem 1.1rem;border-radius:0 10px 10px 0;margin:1.2rem 0}
+.formule{font-family:"Archivo",sans-serif;font-weight:800;font-size:clamp(1.05rem,2.8vw,1.3rem);background:var(--encre);color:var(--papier);padding:.9rem 1.1rem;border-radius:10px;margin:1rem 0;line-height:1.35}
+.formule small{display:block;font-family:"Atkinson Hyperlegible",sans-serif;font-weight:400;font-size:.9rem;opacity:.85;margin-top:.3rem}
+.aide{font-size:.92rem;color:var(--doux)}
+.source{font-size:.85rem;color:var(--doux)}
+
+/* flashcards */
+.flashs{display:grid;gap:1rem;grid-template-columns:repeat(auto-fit,minmax(14rem,1fr));margin-top:1rem}
+.flash{perspective:900px;border:none;background:none;padding:0;font:inherit;color:inherit;cursor:pointer;min-height:9.5rem;text-align:left}
+.flash .in{position:relative;width:100%;height:100%;min-height:9.5rem;transition:transform .55s cubic-bezier(.3,1.3,.5,1);transform-style:preserve-3d}
+.flash[aria-pressed="true"] .in{transform:rotateY(180deg)}
+.face{position:absolute;inset:0;border-radius:12px;padding:1rem;backface-visibility:hidden;display:flex;flex-direction:column;justify-content:center}
+.face.av{background:var(--kraft);color:#2A1C0C;border:3px solid var(--kraft-2);align-items:center;text-align:center}
+.face.av b{font-family:"Archivo",sans-serif;font-size:1.35rem;font-weight:900}
+.face.av small{margin-top:.4rem;opacity:.75}
+.face.ar{background:var(--carte);border:3px solid var(--encre);transform:rotateY(180deg);font-size:.98rem}
+@media (prefers-reduced-motion:reduce){.flash[aria-pressed="true"] .av{visibility:hidden}.flash[aria-pressed="true"] .ar{transform:none}}
+
+/* tableaux */
+.tab-scroll{overflow-x:auto;margin-top:1rem;border-radius:10px;border:1px solid var(--trait)}
+table{border-collapse:collapse;width:100%;background:var(--carte);font-variant-numeric:tabular-nums}
+th,td{border:1px solid var(--trait);padding:.5rem .55rem;text-align:center}
+thead th{background:#1F2A44;color:#fff;font-family:"Archivo",sans-serif;font-weight:600}
+thead tr:nth-child(2) th{background:#3A4563;font-size:.9rem}
+td.lib{text-align:left;font-weight:700;white-space:nowrap}
+.cad{min-width:52rem}
+.cad td.v{background:color-mix(in srgb,var(--scotch) 25%,var(--carte));font-weight:700}
+.cad td.inc{color:var(--rouge);font-weight:900}
+.legende{display:flex;flex-wrap:wrap;gap:.5rem 1.2rem;margin-top:.8rem;font-size:.95rem}
+.legende span b{display:inline-grid;place-items:center;width:1.7rem;height:1.7rem;border-radius:6px;background:#1F2A44;color:#fff;margin-right:.35rem;font-family:"Archivo",sans-serif}
+
+.etapes{list-style:none;padding:0;margin:1rem 0;display:grid;gap:.6rem;counter-reset:e}
+.etapes li{counter-increment:e;background:var(--carte);border:1px solid var(--trait);border-radius:10px;padding:.8rem 1rem .8rem 3.3rem;position:relative}
+.etapes li::before{content:counter(e);position:absolute;left:.9rem;top:.8rem;width:1.8rem;height:1.8rem;border-radius:50%;background:var(--kraft-2);color:#fff;display:grid;place-items:center;font-weight:800;font-family:"Archivo",sans-serif}
+.etapes .calc{font-family:"Archivo",sans-serif;font-weight:700;color:var(--vert)}
+
+/* ---------- Missions ---------- */
+.niveau-titre{display:flex;align-items:center;gap:.7rem;margin:2.4rem 0 .4rem}
+.niveau-titre span{background:var(--scotch);color:#1F2A44;font-family:"Archivo",sans-serif;font-weight:900;padding:.25rem .8rem;border-radius:8px;transform:rotate(-2deg);display:inline-block}
+.exo{background:var(--carte);border:2px solid var(--encre);border-radius:14px;padding:1.2rem;margin-top:1.2rem;position:relative;transition:border-color .3s}
+.exo h3{display:flex;gap:.6rem;align-items:center;flex-wrap:wrap;padding-right:6rem}
+.exo h3 .tag{background:var(--kraft);color:#2A1C0C;font-size:.78rem;padding:.15rem .55rem;border-radius:999px}
+.exo .gain{position:absolute;right:1rem;top:1.1rem;font-weight:900;font-family:"Archivo",sans-serif;color:var(--kraft-2);font-size:.95rem}
+.exo.reussi{border-color:var(--bleu)}
+.exo.reussi::after{content:"MISSION TERMINÉE";position:absolute;right:.8rem;top:-.9rem;background:var(--bleu);color:#fff;font-family:"Archivo",sans-serif;font-weight:900;font-size:.78rem;padding:.2rem .6rem;border-radius:6px;transform:rotate(3deg);animation:tamponne2 .45s both}
+@keyframes tamponne2{from{transform:rotate(3deg) scale(2);opacity:0}to{transform:rotate(3deg) scale(1);opacity:1}}
+.exo table{min-width:24rem}
+.exo input[data-rep]{width:5.2rem;font:inherit;font-weight:700;text-align:center;padding:.35rem;border:2px solid var(--trait);border-radius:8px;background:var(--papier);color:var(--texte)}
+.exo input.ok{border-color:var(--vert);background:color-mix(in srgb,var(--vert) 14%,var(--papier))}
+.exo input.ko{border-color:var(--rouge);background:color-mix(in srgb,var(--rouge) 12%,var(--papier))}
+.ligne{display:grid;grid-template-columns:1fr auto;gap:.6rem 1rem;align-items:center;padding:.55rem 0;border-bottom:1px dashed var(--trait)}
+.ligne:last-of-type{border-bottom:none}
+.btns{display:flex;flex-wrap:wrap;gap:.6rem;margin-top:1rem}
+button.b{font:inherit;font-weight:700;padding:.55rem 1rem;border-radius:8px;border:2px solid #1F2A44;background:#1F2A44;color:#fff;cursor:pointer;transition:transform .1s}
+button.b:active{transform:scale(.96)}
+button.b.sec{background:transparent;color:var(--texte);border-color:var(--texte)}
+button.b.sol:disabled{background:var(--gris);border-color:var(--gris);color:#fff;cursor:not-allowed;opacity:.75}
+.retour{margin-top:.8rem;font-weight:700;min-height:1.6em}
+.retour.bien{color:var(--vert)}
+.correction{margin-top:1rem}
+.secoue{animation:secoue .45s}
+@keyframes secoue{20%,60%{transform:translateX(-6px)}40%,80%{transform:translateX(6px)}}
+.saute{animation:saute .4s}
+@keyframes saute{50%{transform:scale(1.12)}}
+
+/* associations */
+.assoc{display:grid;grid-template-columns:auto 1fr;gap:1rem;align-items:start}
+.assoc .col{display:grid;gap:.5rem}
+.assoc button{font:inherit;text-align:left;padding:.6rem .8rem;border-radius:10px;border:2px solid var(--trait);background:var(--papier);color:var(--texte);cursor:pointer}
+.assoc .col-a button{font-family:"Archivo",sans-serif;font-weight:900;font-size:1.3rem;width:3.2rem;text-align:center}
+.assoc button.choisi{border-color:var(--bleu);background:color-mix(in srgb,var(--bleu) 15%,var(--papier))}
+.assoc button.apparie{border-color:var(--vert);background:color-mix(in srgb,var(--vert) 15%,var(--papier));cursor:default}
+
+/* choix (vrai/faux, classement) */
+.items{display:grid;gap:.7rem}
+.item{border:1px solid var(--trait);border-radius:10px;padding:.8rem .9rem;background:var(--papier)}
+.item p{margin:0 0 .5rem}
+.item .opts{display:flex;flex-wrap:wrap;gap:.5rem}
+.item .opts button{font:inherit;font-weight:700;padding:.4rem .9rem;border-radius:999px;border:2px solid var(--trait);background:var(--carte);color:var(--texte);cursor:pointer}
+.item .opts button.bon{background:var(--vert);border-color:var(--vert);color:#fff}
+.item .opts button.faux{background:var(--rouge);border-color:var(--rouge);color:#fff}
+.item.juste{border-color:var(--vert)}
+.item .explic{font-size:.93rem;color:var(--doux);margin:.5rem 0 0}
+
+/* chasse aux erreurs */
+td.cible button{font:inherit;font-weight:800;width:100%;padding:.3rem;border:2px dashed var(--kraft-2);border-radius:6px;background:var(--papier);color:var(--texte);cursor:pointer}
+td.cible button.marque{border-style:solid;border-color:var(--rouge);background:color-mix(in srgb,var(--rouge) 15%,var(--papier))}
+td.cible button.revele::after{content:attr(data-juste);display:block;font-size:.8rem;color:var(--vert)}
+
+/* ordre */
+.ordre-zone{display:grid;gap:1rem;grid-template-columns:repeat(auto-fit,minmax(16rem,1fr))}
+.ordre-zone h4{margin:.2rem 0 .5rem;font-family:"Archivo",sans-serif}
+.pile,.reponse{display:grid;gap:.45rem;min-height:3rem;padding:.6rem;border:2px dashed var(--trait);border-radius:10px;list-style:none;margin:0}
+.reponse{counter-reset:o}
+.pile button,.reponse button{font:inherit;text-align:left;width:100%;padding:.55rem .7rem;border-radius:8px;border:2px solid var(--trait);background:var(--papier);color:var(--texte);cursor:pointer}
+.reponse li{counter-increment:o;display:flex;gap:.5rem;align-items:center}
+.reponse li::before{content:counter(o);font-family:"Archivo",sans-serif;font-weight:900;min-width:1.4rem}
+.reponse button.ok{border-color:var(--vert)}.reponse button.ko{border-color:var(--rouge)}
+
+/* chrono */
+.chrono{display:grid;gap:1rem;grid-template-columns:repeat(auto-fit,minmax(15rem,1fr));align-items:center}
+.ecran{background:#1F2A44;color:#fff;border-radius:12px;padding:1rem 1.2rem;font-family:"Archivo",sans-serif}
+.ecran .temps{font-size:2.6rem;font-weight:900;line-height:1}
+.ecran .pts{font-size:1.1rem;color:var(--scotch)}
+.qchrono{font-size:1.15rem;font-weight:700;min-height:3em}
+.qchrono b{color:var(--bleu)}
+#repChrono{width:6rem;font:inherit;font-weight:800;font-size:1.2rem;text-align:center;padding:.4rem;border:2px solid var(--trait);border-radius:8px;background:var(--papier);color:var(--texte)}
+
+textarea{width:100%;min-height:6rem;font:inherit;padding:.6rem;border:2px solid var(--trait);border-radius:8px;background:var(--papier);color:var(--texte)}
+
+/* quiz */
+.question{background:var(--carte);border:1px solid var(--trait);border-radius:12px;padding:1rem 1.1rem;margin-bottom:.9rem}
+.question p.q{font-weight:700;margin:0 0 .6rem}
+.choix{display:flex;flex-wrap:wrap;gap:.5rem}
+.choix button{font:inherit;padding:.5rem .9rem;border-radius:999px;border:2px solid var(--trait);background:var(--papier);color:var(--texte);cursor:pointer;text-align:left}
+.choix button:hover{border-color:var(--kraft-2)}
+.choix button.bon{background:var(--vert);border-color:var(--vert);color:#fff}
+.choix button.faux{background:var(--rouge);border-color:var(--rouge);color:#fff}
+.explic{margin:.6rem 0 0;font-size:.95rem;color:var(--doux)}
+.score{font-family:"Archivo",sans-serif;font-size:1.3rem;font-weight:900}
+
+.fiche{list-style:none;padding:0;display:grid;gap:.5rem}
+.fiche li{background:var(--carte);border:1px solid var(--trait);border-radius:8px;padding:.6rem .9rem}
+
+/* mode enseignante */
+.prof-only{display:none}
+body.mode-prof .prof-only{display:block}
+.panneau-prof{border:2px solid var(--scotch);background:color-mix(in srgb,var(--scotch) 12%,var(--carte));border-radius:12px;padding:1rem 1.2rem;margin-top:1.2rem}
+dialog{border:none;border-radius:14px;padding:1.4rem;max-width:22rem;width:calc(100% - 2rem);background:var(--carte);color:var(--texte);box-shadow:0 20px 50px rgba(0,0,0,.35)}
+dialog::backdrop{background:rgba(15,20,35,.55)}
+dialog input{width:100%;font:inherit;padding:.55rem;border:2px solid var(--trait);border-radius:8px;background:var(--papier);color:var(--texte);margin:.4rem 0 .2rem}
+#erreurCode{color:var(--rouge);font-weight:700;min-height:1.4em;margin:.2rem 0}
+
+#confettis{position:fixed;inset:0;pointer-events:none;z-index:100}
+
+/* dépôt des travaux */
+.depot{background:var(--carte);border:3px solid var(--vert);border-radius:14px;padding:1.3rem 1.3rem 1.1rem;margin-top:1rem}
+.btn-depot{display:inline-flex;align-items:center;gap:.5rem;background:var(--vert);color:#fff;font-family:"Archivo",sans-serif;font-weight:800;font-size:1.15rem;text-decoration:none;padding:.8rem 1.3rem;border-radius:10px;margin:.6rem 0 .4rem;transition:transform .15s}
+.btn-depot:hover{transform:translateY(-2px)}
+.url-depot{font-size:.88rem;color:var(--doux);word-break:break-all}
+.lien-depot-barre{font-size:.9rem;font-weight:700;color:var(--scotch);white-space:nowrap}
+.identite input{width:min(16rem,100%);font:inherit;font-weight:700;padding:.4rem .6rem;border:2px solid var(--trait);border-radius:8px;background:var(--papier);color:var(--texte)}
+.code-eleve{font-family:ui-monospace,Consolas,monospace;font-size:1rem;font-weight:700;word-break:break-all;background:var(--papier);border:2px dashed var(--encre);border-radius:8px;padding:.7rem .8rem;user-select:all}
+button.b.danger{background:transparent;color:var(--rouge);border-color:var(--rouge)}
+/* sélections neutres (l'élève ne voit pas si c'est juste) */
+.assoc button.lie{border-color:var(--bleu)}
+.assoc .badge{display:inline-grid;place-items:center;min-width:1.7rem;height:1.7rem;border-radius:6px;background:var(--trait);color:var(--texte);font-family:"Archivo",sans-serif;font-weight:900;margin-right:.5rem}
+.assoc button.lie .badge{background:var(--bleu);color:#fff}
+.assoc .corr{display:block;font-size:.88rem;font-weight:700;color:var(--vert);margin-top:.2rem}
+.assoc button.bonne,td.cible button.bonne{outline:3px solid var(--vert);outline-offset:1px}
+.assoc button.mauvaise,td.cible button.mauvaise{outline:3px solid var(--rouge);outline-offset:1px}
+.item .opts button.choisi,.choix button.choisi{background:var(--bleu);border-color:var(--bleu);color:#fff}
+.item .opts button.bon,.choix button.bon{background:var(--vert);border-color:var(--vert);color:#fff}
+.item .opts button.faux,.choix button.faux{background:var(--rouge);border-color:var(--rouge);color:#fff}
+#codesEleves{min-height:8rem;font-family:ui-monospace,Consolas,monospace;font-size:.9rem}
+.res-classe{min-width:40rem}
+.res-classe td,.res-classe th{font-size:.92rem}
+td.g{text-align:left}
+.niv{display:inline-block;font-weight:800;border-radius:6px;padding:.05rem .45rem;color:#fff}
+.niv1{background:#C0392B}.niv2{background:#D9822B}.niv3{background:#2D6CDF}.niv4{background:#1E7A4F}
+.fiche-eleve{background:var(--carte);border:1px solid var(--trait);border-radius:10px;padding:.6rem .9rem;margin-top:.7rem}
+.fiche-eleve summary{cursor:pointer;font-weight:700}
+.fiche-eleve table{margin-top:.6rem}
+.fiche-eleve td{font-size:.9rem}
+.invalide{color:var(--rouge);font-weight:700}
+
+footer{padding:2.5rem 0 3rem;font-size:.92rem;color:var(--doux)}
+footer ul{padding-left:1.1rem}
+
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}html{scroll-behavior:auto}}
+@media print{
+  .barre-xp,.etagere,nav.sommaire,.btns,#confettis{display:none}
+  header.carton{background:#fff;border-bottom:2px solid #000}.etiq{box-shadow:none;border:2px solid #000}
+  section{padding:1rem 0}.exo{break-inside:avoid}
+  .formule{background:#fff;color:#000;border:2px solid #000}
+  .flash .in{transform:none!important}.face{position:static;border:1px solid #999}.face.ar{transform:none}
+}
+</style>
+</head>
+<body>
+
+<canvas id="confettis" aria-hidden="true"></canvas>
+
+<div class="barre-xp" role="status">
+  <div class="wrap">
+    <span class="xp-total">⭐ <span id="xp">0</span> XP</span>
+    <span class="xp-niveau" id="niveau">Stagiaire</span>
+    <div class="jauge" aria-hidden="true"><i id="jaugeXP"></i></div>
+    <span class="missions">Missions : <b id="nbMissions">0</b> / 13</span>
+    <a class="lien-depot-barre" href="#rendre">📤 Rendre mon travail</a>
+    <button id="btnProf" type="button">🔒 Enseignante</button>
+  </div>
+</div>
+
+<header class="carton">
+  <div class="wrap">
+    <div>
+      <div class="etiq">
+        <span class="tampon">BLOC 1</span>
+        <div class="haut"><span>CAP Équipier polyvalent du commerce</span><span>Classe 1EPC1</span></div>
+        <h1>Suivre les stocks avec le cadencier</h1>
+        <p class="ref">Recevoir et suivre les commandes · Participer à la passation des commandes fournisseurs</p>
+        <p>Réalisé par : <strong>LEGER Isabelle</strong></p>
+        <div class="codebarre" aria-hidden="true"></div>
+      </div>
+      <nav class="sommaire" aria-label="Sommaire">
+        <a href="#situation">1. Situation</a>
+        <a href="#mots">2. Les mots</a>
+        <a href="#cadencier">3. Le cadencier</a>
+        <a href="#ventes">4. Les ventes</a>
+        <a href="#commande">5. La commande</a>
+        <a href="#missions">6. Missions</a>
+        <a href="#quiz">7. Quiz final</a>
+        <a href="#retenir">8. Je retiens</a>
+        <a href="#rendre">9. Je rends mon travail</a>
+      </nav>
+    </div>
+    <div class="etagere" aria-hidden="true">
+      <div class="planche p1"></div><div class="planche p2"></div>
+      <div class="boite b1"><b>CAFÉ</b></div><div class="boite b2"><b>LAIT</b></div><div class="boite b3"><b>PÂTES</b></div>
+      <div class="boite b4"><b>CHOCO</b></div><div class="boite b5"><b>JUS</b></div><div class="boite b6"><b>EAU</b></div>
+    </div>
+  </div>
+</header>
+
+<main>
+
+<!-- ============ 1. SITUATION ============ -->
+<section id="situation">
+  <div class="wrap lecture">
+    <h2><span class="num">1</span>La situation</h2>
+    <div class="bloc">
+      <p>Tu es en PFMP dans une supérette de quartier, <strong>« Le Petit Panier »</strong> <em>(magasin fictif)</em>.</p>
+      <p>Nous sommes le <strong>lundi de la semaine 49</strong>. Ta tutrice, Mme Durand, te dit :</p>
+      <p style="font-style:italic;margin-top:.6rem">« Ce matin, il ne restait plus que 4 paquets de café. Je ne veux pas de rayon vide ! Prépare-moi la proposition de commande. Sers-toi du cadencier. »</p>
+    </div>
+    <p><strong>Les règles du magasin :</strong></p>
+    <ul>
+      <li>Le stock est compté <strong>chaque lundi matin</strong>, avant l'arrivée de la livraison.</li>
+      <li>La commande est passée <strong>chaque lundi</strong> et livrée <strong>la semaine suivante</strong>.</li>
+      <li>Chaque commande doit couvrir <strong>2 semaines de ventes</strong>.</li>
+      <li>Le fournisseur livre <strong>par colis</strong> : on ne peut pas commander à l'unité.</li>
+    </ul>
+    <div class="retiens"><strong>Comment gagner des points ?</strong>Chaque mission terminée te rapporte des XP ⭐. Passe de <em>Stagiaire</em> à <em>Chef de rayon</em> ! Ta progression est affichée en haut de l'écran.</div>
+    <div class="retiens"><strong>Ton travail est noté</strong>Ton travail est enregistré automatiquement sur cet appareil. Tu ne verras pas si tes réponses sont justes : <strong>c'est ta professeure qui corrige</strong>. Réfléchis bien. Tu peux modifier tes réponses tant que tu n'as pas envoyé ton code. À la fin, va dans la <a href="#rendre">partie 9</a> pour générer ton code et l'envoyer.</div>
+  </div>
+</section>
+
+<!-- ============ 2. MOTS ============ -->
+<section id="mots">
+  <div class="wrap">
+    <h2><span class="num">2</span>Les mots du stock</h2>
+    <p class="intro lecture">Clique sur chaque carton pour découvrir la définition.</p>
+    <div class="flashs" id="flashs"></div>
+    <div class="retiens lecture"><strong>Je retiens</strong>Bien gérer les stocks, c'est trouver le bon équilibre : <strong>ni rupture, ni surstock</strong>.</div>
+  </div>
+</section>
+
+<!-- ============ 3. CADENCIER ============ -->
+<section id="cadencier">
+  <div class="wrap">
+    <h2><span class="num">3</span>Le cadencier</h2>
+    <div class="lecture">
+      <p>Le <strong>cadencier</strong> est un tableau qui permet de suivre, produit par produit et semaine après semaine, <strong>le stock, les commandes, les livraisons et les ventes</strong>. Il sert à décider <strong>combien commander</strong>.</p>
+      <div class="grille">
+        <div class="bloc"><h3>📝 Le cadencier manuel</h3><p>Un tableau papier. L'employé compte le stock en rayon et en réserve, puis note les chiffres à la main.</p></div>
+        <div class="bloc"><h3>💻 Le cadencier informatisé</h3><p>Un tableau dans le logiciel du magasin. Les ventes enregistrées en caisse s'ajoutent automatiquement. L'employé vérifie et valide.</p></div>
+      </div>
+    </div>
+
+    <h3 style="margin-top:1.8rem">Le cadencier du Petit Panier (semaines 45 à 49)</h3>
+    <div class="tab-scroll">
+      <table class="cad">
+        <thead>
+          <tr><th rowspan="2">Produit</th><th rowspan="2">Colis</th><th rowspan="2">Stock de sécurité</th>
+            <th colspan="4">Sem. 45</th><th colspan="4">Sem. 46</th><th colspan="4">Sem. 47</th><th colspan="4">Sem. 48</th><th>Sem. 49</th></tr>
+          <tr><th>S</th><th>C</th><th>L</th><th>V</th><th>S</th><th>C</th><th>L</th><th>V</th><th>S</th><th>C</th><th>L</th><th>V</th><th>S</th><th>C</th><th>L</th><th>V</th><th>S</th></tr>
+        </thead>
+        <tbody>
+          <tr><td class="lib">Café moulu 250 g</td><td>6</td><td>10</td>
+            <td>30</td><td>24</td><td>0</td><td class="v">18</td>
+            <td>12</td><td>12</td><td>24</td><td class="v">20</td>
+            <td>16</td><td>18</td><td>12</td><td class="v">19</td>
+            <td>9</td><td>18</td><td>18</td><td class="v">23</td>
+            <td>4</td></tr>
+          <tr><td class="lib">Lait demi-écrémé 1 L</td><td>6</td><td>12</td>
+            <td>40</td><td>36</td><td>0</td><td class="v inc">?</td>
+            <td>12</td><td>30</td><td>36</td><td class="v inc">?</td>
+            <td>18</td><td>24</td><td>30</td><td class="v inc">?</td>
+            <td>22</td><td>30</td><td>24</td><td class="v inc">?</td>
+            <td>14</td></tr>
+          <tr><td class="lib">Boîte de chocolats 250 g</td><td>6</td><td>6</td>
+            <td>20</td><td>12</td><td>0</td><td class="v">6</td>
+            <td>14</td><td>12</td><td>12</td><td class="v">10</td>
+            <td>16</td><td>12</td><td>12</td><td class="v">14</td>
+            <td>14</td><td>18</td><td>18</td><td class="v">20</td>
+            <td>12</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="legende">
+      <span><b>S</b>Stock compté le lundi matin</span>
+      <span><b>C</b>Quantité commandée</span>
+      <span><b>L</b>Quantité livrée</span>
+      <span><b>V</b>Quantité vendue</span>
+    </div>
+    <p class="aide">Chiffres fictifs. Fais défiler le tableau sur le côté si besoin. Les « ? » du lait, c'est toi qui les trouveras (mission 4).</p>
+    <div class="lecture">
+      <h3 style="margin-top:1.5rem">Comment le lire ?</h3>
+      <ul>
+        <li>On lit <strong>une ligne = un produit</strong>, de gauche à droite, semaine par semaine.</li>
+        <li>Ce qui est commandé une semaine (C) est livré la semaine suivante (L). Café : 24 commandés en semaine 45, 24 livrés en semaine 46.</li>
+        <li>La commande de café de la semaine 48 (18 paquets) <strong>n'est pas encore arrivée</strong> lundi matin en semaine 49 : c'est une <strong>commande en attente</strong>.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 4. VENTES ============ -->
+<section id="ventes">
+  <div class="wrap lecture">
+    <h2><span class="num">4</span>Calculer les ventes d'une semaine</h2>
+    <p>Dans un cadencier manuel, on ne compte pas les ventes : on les <strong>retrouve par le calcul</strong>.</p>
+    <p><strong>Le raisonnement :</strong> au début de la semaine, j'ai mon stock. La livraison ajoute des produits. Ce qui a disparu le lundi suivant, ce sont les ventes.</p>
+    <div class="formule">Ventes = Stock du début + Livraison − Stock de la semaine suivante
+      <small>V = S + L − S (semaine suivante)</small></div>
+    <h3>Exemple : café, semaine 46</h3>
+    <ol class="etapes">
+      <li>Stock le lundi de la semaine 46 : <span class="calc">12</span></li>
+      <li>Livraison de la semaine 46 : 12 + 24 = <span class="calc">36</span> paquets disponibles</li>
+      <li>Stock le lundi de la semaine 47 : 16 → 36 − 16 = <span class="calc">20 paquets vendus</span></li>
+    </ol>
+    <div class="retiens"><strong>Astuce : la formule « à l'envers »</strong>Si je connais les ventes, je retrouve le stock suivant : <strong>Stock suivant = S + L − V</strong>.</div>
+    <div class="attention"><strong>Attention :</strong> cette méthode suppose qu'il n'y a pas eu de casse, de vol ou de produit périmé jeté. Sinon, le chiffre trouvé ne correspond pas seulement à des ventes.</div>
+  </div>
+</section>
+
+<!-- ============ 5. COMMANDE ============ -->
+<section id="commande">
+  <div class="wrap lecture">
+    <h2><span class="num">5</span>Calculer la quantité à commander</h2>
+    <h3>Étape A : la cadence moyenne</h3>
+    <div class="formule">Cadence moyenne = Total des ventes ÷ Nombre de semaines</div>
+    <p>Café : 18 + 20 + 19 + 23 = 80 paquets en 4 semaines → 80 ÷ 4 = <strong>20 paquets par semaine</strong>.</p>
+    <h3>Étape B : la quantité à commander</h3>
+    <div class="formule">Quantité à commander = Ventes prévues + Stock de sécurité − Stock actuel − Commandes en attente
+      <small>Ventes prévues = cadence moyenne × nombre de semaines à couvrir</small></div>
+    <h3>Exemple : café, lundi semaine 49</h3>
+    <ol class="etapes">
+      <li>Ventes prévues sur 2 semaines : 20 × 2 = <span class="calc">40</span></li>
+      <li>+ stock de sécurité : 40 + 10 = <span class="calc">50</span></li>
+      <li>− stock actuel : 50 − 4 = <span class="calc">46</span></li>
+      <li>− commande en attente (18) : 46 − 18 = <span class="calc">28 paquets</span></li>
+      <li>Arrondi au colis : 28 ÷ 6 = 4,67 → <span class="calc">5 colis, soit 30 paquets</span></li>
+    </ol>
+    <div class="retiens"><strong>Pourquoi 5 colis et pas 4 ?</strong>Avec 4 colis (24 paquets), il en manquerait 4 : risque de rupture. Dans ce cours, on arrondit au <strong>colis supérieur</strong>. En entreprise, demande toujours la règle du magasin à ton tuteur.</div>
+    <div class="attention"><strong>Produits saisonniers :</strong> les ventes de chocolats montent chaque semaine (6, 10, 14, 20) à l'approche de Noël. La moyenne (12,5) est trop basse pour décembre : on en parle à son tuteur avant de proposer la commande.</div>
+  </div>
+</section>
+
+<!-- ============ 6. MISSIONS ============ -->
+<section id="missions">
+  <div class="wrap lecture">
+    <h2><span class="num">6</span>Les missions</h2>
+    <p class="intro">13 missions en 4 niveaux. Réponds à toutes les questions : tes réponses sont enregistrées au fur et à mesure. Tu ne verras pas si c'est juste, ta professeure corrigera. Une mission est « terminée » quand tu as répondu à tout.</p>
+
+    <!-- ===== NIVEAU 1 ===== -->
+    <div class="niveau-titre"><span>NIVEAU 1</span><h3 style="margin:0">Je lis le cadencier</h3></div>
+
+    <div class="exo" id="m1" data-type="assoc" data-xp="10">
+      <span class="gain">+10 XP</span>
+      <h3>Mission 1 <span class="tag">Associer</span></h3>
+      <p>Clique sur une lettre, puis sur sa signification. Pour changer, recommence avec la même lettre.</p>
+      <div class="assoc">
+        <div class="col col-a">
+          <button type="button" data-k="S">S</button><button type="button" data-k="C">C</button>
+          <button type="button" data-k="L">L</button><button type="button" data-k="V">V</button>
+        </div>
+        <div class="col col-b">
+          <button type="button" data-k="L">Les produits livrés au magasin</button>
+          <button type="button" data-k="V">Les produits achetés par les clients</button>
+          <button type="button" data-k="S">Les produits présents le lundi matin</button>
+          <button type="button" data-k="C">Les produits demandés au fournisseur</button>
+        </div>
+      </div>
+      <div class="btns"><button class="b sol" type="button" data-sol="m1" disabled>🔒 Correction</button></div>
+      <p class="retour" aria-live="polite"></p>
+    </div>
+
+    <div class="exo" id="m2" data-type="saisie" data-xp="10">
+      <span class="gain">+10 XP</span>
+      <h3>Mission 2 <span class="tag">Je repère</span></h3>
+      <p>Utilise le <a href="#cadencier">cadencier du Petit Panier</a> pour répondre.</p>
+      <div class="ligne"><label for="m2a">a) Combien de paquets de café ont été commandés en semaine 47 ?</label><input id="m2a" inputmode="numeric" data-rep="18"></div>
+      <div class="ligne"><label for="m2b">b) Combien de bouteilles de lait ont été livrées en semaine 46 ?</label><input id="m2b" inputmode="numeric" data-rep="36"></div>
+      <div class="ligne"><label for="m2c">c) Quel était le stock de chocolats le lundi de la semaine 48 ?</label><input id="m2c" inputmode="numeric" data-rep="14"></div>
+      <div class="ligne"><label for="m2d">d) Combien de boîtes de chocolats ont été vendues en semaine 48 ?</label><input id="m2d" inputmode="numeric" data-rep="20"></div>
+      <div class="ligne"><label for="m2e">e) En quelle semaine le café s'est-il le mieux vendu ? (numéro)</label><input id="m2e" inputmode="numeric" data-rep="48"></div>
+      <div class="ligne"><label for="m2f">f) Combien de bouteilles de lait y a-t-il dans un colis ?</label><input id="m2f" inputmode="numeric" data-rep="6"></div>
+      <div class="btns"><button class="b sol" type="button" data-sol="m2" disabled>🔒 Correction</button></div>
+      <p class="retour" aria-live="polite"></p>
+      <div class="correction" hidden><ol class="etapes"><li>Café, colonne C de la semaine 47 : <span class="calc">18</span></li><li>Lait, colonne L de la semaine 46 : <span class="calc">36</span></li><li>Chocolats, colonne S de la semaine 48 : <span class="calc">14</span></li><li>Chocolats, colonne V de la semaine 48 : <span class="calc">20</span></li><li>Café : 18, 20, 19, 23 → semaine <span class="calc">48</span></li><li>Colonne « Colis » du lait : <span class="calc">6</span></li></ol></div>
+    </div>
+
+    <div class="exo" id="m3" data-type="choix" data-xp="10">
+      <span class="gain">+10 XP</span>
+      <h3>Mission 3 <span class="tag">Vrai ou faux</span></h3>
+      <div class="items">
+        <div class="item" data-rep="vrai"><p>La commande de café de la semaine 45 a été livrée en semaine 46.</p><div class="opts"><button type="button" data-val="vrai">Vrai</button><button type="button" data-val="faux">Faux</button></div><p class="explic" hidden>Vrai : 24 commandés en semaine 45, 24 livrés en semaine 46.</p></div>
+        <div class="item" data-rep="faux"><p>Le stock de café baisse chaque lundi.</p><div class="opts"><button type="button" data-val="vrai">Vrai</button><button type="button" data-val="faux">Faux</button></div><p class="explic" hidden>Faux : il passe de 12 (semaine 46) à 16 (semaine 47).</p></div>
+        <div class="item" data-rep="vrai"><p>Les ventes de chocolats augmentent chaque semaine.</p><div class="opts"><button type="button" data-val="vrai">Vrai</button><button type="button" data-val="faux">Faux</button></div><p class="explic" hidden>Vrai : 6, puis 10, puis 14, puis 20.</p></div>
+        <div class="item" data-rep="vrai"><p>Lundi semaine 49, le stock de café est en dessous du stock de sécurité.</p><div class="opts"><button type="button" data-val="vrai">Vrai</button><button type="button" data-val="faux">Faux</button></div><p class="explic" hidden>Vrai : 4 paquets, alors que le stock de sécurité est de 10.</p></div>
+        <div class="item" data-rep="faux"><p>Lundi matin semaine 49, les 18 paquets de café commandés en semaine 48 sont déjà comptés dans le stock.</p><div class="opts"><button type="button" data-val="vrai">Vrai</button><button type="button" data-val="faux">Faux</button></div><p class="explic" hidden>Faux : ils seront livrés pendant la semaine 49. C'est une commande en attente.</p></div>
+      </div>
+      <div class="btns"><button class="b sol" type="button" data-sol="m3" disabled>🔒 Correction</button></div>
+      <p class="retour" aria-live="polite"></p>
+    </div>
+
+    <!-- ===== NIVEAU 2 ===== -->
+    <div class="niveau-titre"><span>NIVEAU 2</span><h3 style="margin:0">Je calcule</h3></div>
+
+    <div class="exo" id="m4" data-type="saisie" data-xp="15">
+      <span class="gain">+15 XP</span>
+      <h3>Mission 4 <span class="tag">Les ventes du lait</span></h3>
+      <p>Calcule les ventes : V = S + L − S (semaine suivante).</p>
+      <div class="tab-scroll">
+        <table>
+          <thead><tr><th>Sem.</th><th>Stock début (S)</th><th>Livraison (L)</th><th>Stock sem. suivante</th><th>Ventes (V)</th></tr></thead>
+          <tbody>
+            <tr><td>45</td><td>40</td><td>0</td><td>12</td><td><input inputmode="numeric" data-rep="28" aria-label="Ventes semaine 45"></td></tr>
+            <tr><td>46</td><td>12</td><td>36</td><td>18</td><td><input inputmode="numeric" data-rep="30" aria-label="Ventes semaine 46"></td></tr>
+            <tr><td>47</td><td>18</td><td>30</td><td>22</td><td><input inputmode="numeric" data-rep="26" aria-label="Ventes semaine 47"></td></tr>
+            <tr><td>48</td><td>22</td><td>24</td><td>14</td><td><input inputmode="numeric" data-rep="32" aria-label="Ventes semaine 48"></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="btns"><button class="b sol" type="button" data-sol="m4" disabled>🔒 Correction</button></div>
+      <p class="retour" aria-live="polite"></p>
+      <div class="correction" hidden><ol class="etapes"><li>40 + 0 − 12 = <span class="calc">28</span></li><li>12 + 36 − 18 = <span class="calc">30</span></li><li>18 + 30 − 22 = <span class="calc">26</span></li><li>22 + 24 − 14 = <span class="calc">32</span></li></ol></div>
+    </div>
+
+    <div class="exo" id="m5" data-type="saisie" data-xp="15">
+      <span class="gain">+15 XP</span>
+      <h3>Mission 5 <span class="tag">Les cases mystères</span></h3>
+      <p>Pâtes 500 g (colis de 12). Trois cases ont été effacées. Retrouve-les !</p>
+      <div class="tab-scroll">
+        <table>
+          <thead><tr><th>Sem.</th><th>S</th><th>C</th><th>L</th><th>V</th></tr></thead>
+          <tbody>
+            <tr><td>45</td><td>60</td><td>48</td><td>0</td><td>35</td></tr>
+            <tr><td>46</td><td>25</td><td>36</td><td>48</td><td><input inputmode="numeric" data-rep="35" aria-label="Ventes semaine 46"></td></tr>
+            <tr><td>47</td><td>38</td><td>24</td><td><input inputmode="numeric" data-rep="36" aria-label="Livraison semaine 47"></td><td>40</td></tr>
+            <tr><td>48</td><td>34</td><td>36</td><td>24</td><td>38</td></tr>
+            <tr><td>49</td><td><input inputmode="numeric" data-rep="20" aria-label="Stock semaine 49"></td><td>—</td><td>—</td><td>—</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="aide">💡 Indices : V = S + L − S suivant · Stock suivant = S + L − V · La livraison d'une semaine correspond souvent à la commande de la semaine d'avant.</p>
+      <div class="btns"><button class="b sol" type="button" data-sol="m5" disabled>🔒 Correction</button></div>
+      <p class="retour" aria-live="polite"></p>
+      <div class="correction" hidden><ol class="etapes"><li>Ventes sem. 46 : 25 + 48 − 38 = <span class="calc">35</span></li><li>Livraison sem. 47 : 34 + 40 − 38 = <span class="calc">36</span> (c'est bien la commande de la semaine 46)</li><li>Stock sem. 49 : 34 + 24 − 38 = <span class="calc">20</span></li></ol></div>
+    </div>
+
+    <div class="exo" id="m6" data-type="saisie" data-xp="15">
+      <span class="gain">+15 XP</span>
+      <h3>Mission 6 <span class="tag">Cadence moyenne</span></h3>
+      <p>Calcule la cadence moyenne par semaine de chaque produit.</p>
+      <div class="ligne"><label for="m6a">Jus d'orange : 12 – 15 – 9 – 16</label><input id="m6a" inputmode="numeric" data-rep="13"></div>
+      <div class="ligne"><label for="m6b">Yaourts nature : 40 – 36 – 44 – 40</label><input id="m6b" inputmode="numeric" data-rep="40"></div>
+      <div class="ligne"><label for="m6c">Biscuits : 21 – 19 – 23 – 17 – 20 (5 semaines !)</label><input id="m6c" inputmode="numeric" data-rep="20"></div>
+      <div class="ligne"><label for="m6d">Packs d'eau : 8 – 11 – 10 – 7</label><input id="m6d" inputmode="numeric" data-rep="9"></div>
+      <div class="btns"><button class="b sol" type="button" data-sol="m6" disabled>🔒 Correction</button></div>
+      <p class="retour" aria-live="polite"></p>
+      <div class="correction" hidden><ol class="etapes"><li>52 ÷ 4 = <span class="calc">13</span></li><li>160 ÷ 4 = <span class="calc">40</span></li><li>100 ÷ 5 = <span class="calc">20</span></li><li>36 ÷ 4 = <span class="calc">9</span></li></ol></div>
+    </div>
+
+    <div class="exo" id="m7" data-type="erreurs" data-xp="15">
+      <span class="gain">+15 XP</span>
+      <h3>Mission 7 <span class="tag">Chasse aux erreurs</span></h3>
+      <p>Un stagiaire a rempli la colonne « Ventes » du gel douche. <strong>3 ventes sont fausses.</strong> Clique sur les 3 cases fausses (clique encore sur une case pour l'annuler).</p>
+      <div class="tab-scroll">
+        <table>
+          <thead><tr><th>Sem.</th><th>S</th><th>L</th><th>V (stagiaire)</th></tr></thead>
+          <tbody>
+            <tr><td>45</td><td>30</td><td>0</td><td class="cible"><button type="button" data-faux="0" data-juste="✔ 8">8</button></td></tr>
+            <tr><td>46</td><td>22</td><td>12</td><td class="cible"><button type="button" data-faux="1" data-juste="→ 10">14</button></td></tr>
+            <tr><td>47</td><td>24</td><td>12</td><td class="cible"><button type="button" data-faux="0" data-juste="✔ 16">16</button></td></tr>
+            <tr><td>48</td><td>20</td><td>6</td><td class="cible"><button type="button" data-faux="1" data-juste="→ 11">9</button></td></tr>
+            <tr><td>49</td><td>15</td><td>12</td><td class="cible"><button type="button" data-faux="1" data-juste="→ 9">7</button></td></tr>
+            <tr><td>50</td><td>18</td><td>—</td><td>—</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="btns"><button class="b sol" type="button" data-sol="m7" disabled>🔒 Correction</button></div>
+      <p class="retour" aria-live="polite"></p>
+    </div>
+
+    <!-- ===== NIVEAU 3 ===== -->
+    <div class="niveau-titre"><span>NIVEAU 3</span><h3 style="margin:0">Je commande</h3></div>
+
+    <div class="exo" id="m8" data-type="saisie" data-xp="10">
+      <span class="gain">+10 XP</span>
+      <h3>Mission 8 <span class="tag">Arrondi au colis</span></h3>
+      <p>Combien de colis faut-il commander ? (on arrondit au colis supérieur)</p>
+      <div class="ligne"><label for="m8a">Besoin 26 produits · colis de 6</label><input id="m8a" inputmode="numeric" data-rep="5"></div>
+      <div class="ligne"><label for="m8b">Besoin 40 produits · colis de 12</label><input id="m8b" inputmode="numeric" data-rep="4"></div>
+      <div class="ligne"><label for="m8c">Besoin 18 produits · colis de 6</label><input id="m8c" inputmode="numeric" data-rep="3"></div>
+      <div class="ligne"><label for="m8d">Besoin 51 produits · colis de 10</label><input id="m8d" inputmode="numeric" data-rep="6"></div>
+      <div class="ligne"><label for="m8e">Besoin 7 produits · colis de 8</label><input id="m8e" inputmode="numeric" data-rep="1"></div>
+      <div class="btns"><button class="b sol" type="button" data-sol="m8" disabled>🔒 Correction</button></div>
+      <p class="retour" aria-live="polite"></p>
+      <div class="correction" hidden><ol class="etapes"><li>26 ÷ 6 = 4,33 → <span class="calc">5</span></li><li>40 ÷ 12 = 3,33 → <span class="calc">4</span></li><li>18 ÷ 6 = 3 tout rond → <span class="calc">3</span></li><li>51 ÷ 10 = 5,1 → <span class="calc">6</span></li><li>7 ÷ 8 = 0,875 → <span class="calc">1</span></li></ol></div>
+    </div>
+
+    <div class="exo" id="m9" data-type="saisie" data-xp="20">
+      <span class="gain">+20 XP</span>
+      <h3>Mission 9 <span class="tag">Commande du lait</span></h3>
+      <p>Lundi semaine 49. Stock actuel <strong>14</strong> · stock de sécurité <strong>12</strong> · commande en attente <strong>30</strong> · colis de <strong>6</strong> · la commande couvre <strong>2 semaines</strong>. Ventes : tes résultats de la mission 4.</p>
+      <div class="ligne"><label for="m9a">a) Total des ventes (semaines 45 à 48)</label><input id="m9a" inputmode="numeric" data-rep="116"></div>
+      <div class="ligne"><label for="m9b">b) Cadence moyenne par semaine</label><input id="m9b" inputmode="numeric" data-rep="29"></div>
+      <div class="ligne"><label for="m9c">c) Ventes prévues sur 2 semaines</label><input id="m9c" inputmode="numeric" data-rep="58"></div>
+      <div class="ligne"><label for="m9d">d) Quantité à commander (avant arrondi)</label><input id="m9d" inputmode="numeric" data-rep="26"></div>
+      <div class="ligne"><label for="m9e">e) Nombre de colis</label><input id="m9e" inputmode="numeric" data-rep="5"></div>
+      <div class="ligne"><label for="m9f">f) Quantité commandée en bouteilles</label><input id="m9f" inputmode="numeric" data-rep="30"></div>
+      <div class="btns"><button class="b sol" type="button" data-sol="m9" disabled>🔒 Correction</button></div>
+      <p class="retour" aria-live="polite"></p>
+      <div class="correction" hidden><ol class="etapes"><li>28 + 30 + 26 + 32 = <span class="calc">116</span></li><li>116 ÷ 4 = <span class="calc">29</span></li><li>29 × 2 = <span class="calc">58</span></li><li>58 + 12 − 14 − 30 = <span class="calc">26</span></li><li>26 ÷ 6 = 4,33 → <span class="calc">5 colis</span></li><li>5 × 6 = <span class="calc">30 bouteilles</span></li></ol></div>
+    </div>
+
+    <div class="exo" id="m10" data-type="saisie" data-xp="20">
+      <span class="gain">+20 XP</span>
+      <h3>Mission 10 <span class="tag">Commande des pâtes</span></h3>
+      <p>Pâtes 500 g, lundi semaine 49. Ventes : <strong>35 – 35 – 40 – 38</strong> · stock actuel <strong>20</strong> · stock de sécurité <strong>15</strong> · commande en attente <strong>36</strong> · colis de <strong>12</strong> · la commande couvre <strong>2 semaines</strong>.</p>
+      <div class="ligne"><label for="m10a">a) Total des ventes</label><input id="m10a" inputmode="numeric" data-rep="148"></div>
+      <div class="ligne"><label for="m10b">b) Cadence moyenne</label><input id="m10b" inputmode="numeric" data-rep="37"></div>
+      <div class="ligne"><label for="m10c">c) Ventes prévues sur 2 semaines</label><input id="m10c" inputmode="numeric" data-rep="74"></div>
+      <div class="ligne"><label for="m10d">d) Quantité à commander (avant arrondi)</label><input id="m10d" inputmode="numeric" data-rep="33"></div>
+      <div class="ligne"><label for="m10e">e) Nombre de colis</label><input id="m10e" inputmode="numeric" data-rep="3"></div>
+      <div class="ligne"><label for="m10f">f) Quantité commandée en paquets</label><input id="m10f" inputmode="numeric" data-rep="36"></div>
+      <div class="btns"><button class="b sol" type="button" data-sol="m10" disabled>🔒 Correction</button></div>
+      <p class="retour" aria-live="polite"></p>
+      <div class="correction" hidden><ol class="etapes"><li>35 + 35 + 40 + 38 = <span class="calc">148</span></li><li>148 ÷ 4 = <span class="calc">37</span></li><li>37 × 2 = <span class="calc">74</span></li><li>74 + 15 − 20 − 36 = <span class="calc">33</span></li><li>33 ÷ 12 = 2,75 → <span class="calc">3 colis</span></li><li>3 × 12 = <span class="calc">36 paquets</span></li></ol></div>
+    </div>
+
+    <div class="exo" id="m11" data-type="ordre" data-xp="10">
+      <span class="gain">+10 XP</span>
+      <h3>Mission 11 <span class="tag">Remettre dans l'ordre</span></h3>
+      <p>Clique sur les étapes pour les ranger dans le bon ordre. Clique sur une étape rangée pour la retirer.</p>
+      <div class="ordre-zone">
+        <div><h4>Les étapes</h4><div class="pile"></div></div>
+        <div><h4>Mon ordre</h4><ol class="reponse"></ol></div>
+      </div>
+      <div class="btns"><button class="b sec" type="button" data-reset="m11">Recommencer</button><button class="b sol" type="button" data-sol="m11" disabled>🔒 Correction</button></div>
+      <p class="retour" aria-live="polite"></p>
+      <div class="correction" hidden><ol class="etapes" id="corrOrdre"></ol></div>
+    </div>
+
+    <!-- ===== NIVEAU 4 ===== -->
+    <div class="niveau-titre"><span>NIVEAU 4</span><h3 style="margin:0">Je deviens expert</h3></div>
+
+    <div class="exo" id="m12" data-type="choix" data-xp="10">
+      <span class="gain">+10 XP</span>
+      <h3>Mission 12 <span class="tag">Rupture ou surstock ?</span></h3>
+      <div class="items">
+        <div class="item" data-rep="rupture"><p>Lundi matin, il ne reste aucun paquet de riz, ni en rayon ni en réserve.</p><div class="opts"><button type="button" data-val="rupture">Rupture</button><button type="button" data-val="surstock">Surstock</button><button type="button" data-val="ok">Stock correct</button></div></div>
+        <div class="item" data-rep="surstock"><p>La réserve contient 200 bouteilles de sirop, alors qu'on en vend 5 par semaine.</p><div class="opts"><button type="button" data-val="rupture">Rupture</button><button type="button" data-val="surstock">Surstock</button><button type="button" data-val="ok">Stock correct</button></div></div>
+        <div class="item" data-rep="ok"><p>Il reste 24 yaourts, on en vend environ 20 par semaine, et la livraison arrive demain.</p><div class="opts"><button type="button" data-val="rupture">Rupture</button><button type="button" data-val="surstock">Surstock</button><button type="button" data-val="ok">Stock correct</button></div></div>
+        <div class="item" data-rep="rupture"><p>Des clients demandent des galettes des rois, mais le rayon et la réserve sont vides.</p><div class="opts"><button type="button" data-val="rupture">Rupture</button><button type="button" data-val="surstock">Surstock</button><button type="button" data-val="ok">Stock correct</button></div></div>
+        <div class="item" data-rep="surstock"><p>Le 3 janvier, il reste 80 boîtes de chocolats de Noël en réserve.</p><div class="opts"><button type="button" data-val="rupture">Rupture</button><button type="button" data-val="surstock">Surstock</button><button type="button" data-val="ok">Stock correct</button></div></div>
+      </div>
+      <div class="btns"><button class="b sol" type="button" data-sol="m12" disabled>🔒 Correction</button></div>
+      <p class="retour" aria-live="polite"></p>
+    </div>
+
+    <div class="exo" id="m13" data-type="chrono" data-xp="30">
+      <span class="gain">+20 XP</span>
+      <h3>Mission 13 <span class="tag">Défi chrono ⏱️</span></h3>
+      <p>60 secondes pour faire le plus de calculs possible ! Tape ta réponse, puis appuie sur Entrée. Ta professeure verra combien de calculs sont justes.</p>
+      <div class="chrono">
+        <div class="ecran"><div class="temps" id="temps">60</div><div class="pts">Réponses données : <span id="ptsChrono">0</span></div></div>
+        <div>
+          <p class="qchrono" id="qChrono">Appuie sur « Démarrer » !</p>
+          <form id="formChrono" style="display:flex;gap:.5rem;flex-wrap:wrap" autocomplete="off">
+            <input id="repChrono" inputmode="numeric" disabled aria-label="Ta réponse">
+            <button class="b" type="submit" id="valChrono" disabled>OK</button>
+            <button class="b sec" type="button" id="goChrono">Démarrer</button>
+          </form>
+          <p class="retour" id="retChrono" aria-live="polite"></p>
+        </div>
+      </div>
+    </div>
+
+    <div class="exo" id="m14" data-type="reflexion">
+      <span class="gain">bonus</span>
+      <h3>Défi bonus <span class="tag">Je réfléchis</span></h3>
+      <p>Ta tutrice te demande pourquoi tu n'as pas utilisé la même méthode pour les chocolats. Réponds en 2 ou 3 phrases, avec les mots <strong>saisonnalité</strong> et <strong>rupture</strong>.</p>
+      <textarea aria-label="Ta réponse"></textarea>
+      <div class="btns"><button class="b sol" type="button" data-sol="m14" disabled>🔒 Exemple de réponse</button></div>
+      <div class="correction" hidden><div class="retiens"><strong>Exemple de réponse</strong>« Les ventes de chocolats augmentent chaque semaine à cause de Noël : c'est la saisonnalité. Si je commande avec la moyenne de 12,5 boîtes par semaine, je risque une rupture de stock en décembre. Je préfère vous demander combien commander en plus. »</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 7. QUIZ ============ -->
+<section id="quiz">
+  <div class="wrap lecture">
+    <h2><span class="num">7</span>Quiz final</h2>
+    <p class="intro">+5 XP par question répondue. Tu peux changer d'avis jusqu'à l'envoi de ton code.</p>
+    <div id="questions"></div>
+    <div class="btns"><button class="b sol" type="button" data-sol="quiz" disabled>🔒 Correction</button></div>
+  </div>
+</section>
+
+<!-- ============ 8. RETENIR ============ -->
+<section id="retenir">
+  <div class="wrap lecture">
+    <h2><span class="num">8</span>Je retiens</h2>
+    <ul class="fiche">
+      <li>Le <strong>cadencier</strong> suit, pour chaque produit et chaque semaine, le stock (S), les commandes (C), les livraisons (L) et les ventes (V). Il peut être <strong>manuel</strong> ou <strong>informatisé</strong>.</li>
+      <li><strong>Ventes = Stock du début + Livraison − Stock de la semaine suivante.</strong></li>
+      <li><strong>Cadence moyenne = Total des ventes ÷ Nombre de semaines.</strong></li>
+      <li><strong>Quantité à commander = Ventes prévues + Stock de sécurité − Stock actuel − Commandes en attente</strong>, puis on arrondit au colis.</li>
+      <li>Une <strong>rupture</strong> fait perdre des ventes et des clients. Un <strong>surstock</strong> encombre la réserve et bloque de l'argent.</li>
+      <li>Pour un produit <strong>saisonnier</strong>, on ajuste la commande avec son tuteur.</li>
+    </ul>
+    <div class="retiens"><strong>Pour ma fiche EP1 (portfolio)</strong>En PFMP, observe le suivi des stocks de ton magasin et note :
+      <ul style="margin:.4rem 0 0">
+        <li>Le cadencier est-il manuel ou informatisé ?</li>
+        <li>Quel jour la commande est-elle passée ? Quel est le délai de livraison ?</li>
+        <li>Qui valide la commande avant de l'envoyer ?</li>
+        <li>As-tu participé à une proposition de commande ? Comment as-tu calculé les quantités ?</li>
+      </ul>
+    </div>
+
+    <div class="panneau-prof prof-only">
+      <h3>🔓 Espace enseignante : ancrage dans le référentiel</h3>
+      <p><strong>Diplôme :</strong> CAP Équipier polyvalent du commerce, arrêté du 29 octobre 2019.</p>
+      <p><strong>Bloc n° 1 :</strong> « Recevoir et suivre les commandes » (unité UP1, épreuve EP1 « Réception et suivi des commandes »).</p>
+      <p><strong>Compétence :</strong> participer à la passation des commandes fournisseurs (surveiller l'état des stocks, préparer les propositions de commande, transmettre la commande après validation, assurer le suivi).</p>
+      <p><strong>Critère :</strong> anticipation et évaluation correctes des quantités à commander.</p>
+      <p><strong>Savoirs associés :</strong> « Les niveaux de stocks » (notions de stock, cadence des ventes et saisonnalité, rupture et conséquences, évaluation des quantités à commander) et « Le cadencier » (les différentes formes de cadencier).</p>
+      <p><strong>Choix pédagogiques :</strong> le « stock de sécurité » et la formule de la quantité à commander ne figurent pas dans le référentiel ; ce sont des outils proposés pour l'évaluation des quantités à commander. La présentation S / C / L / V reprend un sujet national de CAP Employé de vente spécialisé (EP2, 2013).</p>
+      <p><strong>En mode enseignante :</strong> les boutons « Correction » affichent les bonnes réponses (en vert) et les erreurs de l'élève (en rouge), sans effacer ses réponses. En quittant le mode enseignante, la page se recharge et les corrections disparaissent. Le lecteur des codes élèves (note et positionnement C1.1) se trouve en <a href="#correcteur">partie 9</a>.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 9. RENDRE MON TRAVAIL ============ -->
+<section id="rendre">
+  <div class="wrap lecture">
+    <h2><span class="num">9</span>Je rends mon travail</h2>
+    <p class="intro">Quand tu as fini les missions, le quiz et le défi bonus, tu génères ton <strong>code</strong>. Il contient tous tes résultats. Tu l'envoies à ta professeure dans un document.</p>
+
+    <h3>Étape 1 : je génère mon code</h3>
+    <div class="bloc identite">
+      <div class="ligne"><label for="eleveNom">Mon NOM</label><input id="eleveNom" autocomplete="family-name" maxlength="30"></div>
+      <div class="ligne"><label for="elevePrenom">Mon prénom</label><input id="elevePrenom" autocomplete="given-name" maxlength="30"></div>
+      <div class="btns"><button class="b" type="button" id="btnCode">🔑 Générer mon code</button></div>
+      <p class="retour" id="retCode" aria-live="polite"></p>
+      <div id="zoneCode" hidden>
+        <p style="margin-top:.6rem"><strong>Mon code</strong> (ne le modifie pas, sinon il ne fonctionnera plus) :</p>
+        <p class="code-eleve" id="codeEleve"></p>
+        <div class="btns"><button class="b" type="button" id="btnTelecharger">📄 Télécharger mon document</button><button class="b sec" type="button" id="btnCopierCode">📋 Copier le code</button></div>
+        <p class="aide">Le document s'appelle <strong id="nomDoc">NOM_Prénom_cadencier.txt</strong>. Il contient ton code et ta réponse au défi bonus. Tu le trouves dans le dossier <em>Téléchargements</em>.</p>
+      </div>
+    </div>
+
+    <h3 style="margin-top:1.5rem">Étape 2 : je dépose mon document</h3>
+    <div class="depot">
+      <h3>📤 Dépôt des travaux pour Mme LEGER</h3>
+      <p>Ce lien ouvre l'espace de dépôt de ta professeure sur le <strong>Nuage apps.education</strong> (service de l'Éducation nationale). Tu y déposes ton document : il est envoyé directement à Mme LEGER.</p>
+      <a class="btn-depot" href="https://nuage15.apps.education.fr/index.php/s/Bc9635YowztDHHb" target="_blank" rel="noopener">📤 Déposer mon travail</a>
+      <p class="url-depot">Adresse du lien : https://nuage15.apps.education.fr/index.php/s/Bc9635YowztDHHb</p>
+    </div>
+    <ol class="etapes">
+      <li>Je clique sur le bouton vert <strong>« Déposer mon travail »</strong> : la page s'ouvre dans un nouvel onglet.</li>
+      <li>Je choisis mon document <span class="calc">NOM_Prénom_cadencier.txt</span>, puis je l'envoie. Si la page demande un nom, j'écris mon NOM et mon prénom.</li>
+      <li>J'attends la fin de l'envoi avant de fermer la page.</li>
+    </ol>
+    <div class="attention"><strong>Si le téléchargement ne marche pas :</strong> clique sur « Copier le code », colle-le dans un document (Word, LibreOffice, Bloc-notes…) avec ton nom et ta réponse au défi bonus, enregistre-le sous le nom NOM_Prénom_cadencier, puis dépose ce document. Si le lien de dépôt ne fonctionne pas, préviens Mme LEGER.</div>
+
+    <div class="btns" style="margin-top:2rem"><button class="b danger" type="button" id="btnEffacer">🧹 Nouvel élève sur cet appareil (tout effacer)</button></div>
+    <p class="aide">À utiliser seulement sur un ordinateur partagé, <strong>après</strong> avoir envoyé ton document.</p>
+
+    <div class="panneau-prof prof-only" id="correcteur">
+      <h3>🔓 Espace enseignante : lire les codes des élèves</h3>
+      <p>Collez ci-dessous un ou plusieurs codes. Vous pouvez coller le contenu entier des documents reçus : seuls les codes (qui commencent par <strong>CAD1.</strong>) sont lus.</p>
+      <textarea id="codesEleves" aria-label="Codes des élèves" spellcheck="false"></textarea>
+      <div class="btns"><button class="b" type="button" id="btnLire">Lire les codes</button><button class="b sec" type="button" id="btnCopierTab" hidden>📋 Copier le tableau (tableur)</button></div>
+      <p class="retour" id="retLire" aria-live="polite"></p>
+      <div id="resultatsCodes"></div>
+      <details class="fiche-eleve">
+        <summary>Barème et règles de calcul</summary>
+        <div id="baremeTexte"></div>
+      </details>
+    </div>
+  </div>
+</section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <h3>Sources</h3>
+    <ul>
+      <li>Ministère de l'Éducation nationale, <em>CAP Équipier polyvalent du commerce – Annexes du référentiel</em> (arrêté du 29 octobre 2019), <a href="https://referentiels-professionnels.eduscol.education.fr/CAP_EPC/Annexes_CAP%20EPC191029.pdf" target="_blank" rel="noopener">eduscol</a>, consulté le 15/11/2026.</li>
+      <li>Sujet national CAP Employé de vente spécialisé option B, épreuve EP2, session 2013 (modèle de cadencier S/C/L/V), <a href="https://bnseep.eduscol.education.fr/ressources/examens/sujets/13/500/3121600/EP2/EP2_SUJET_EVS_B.pdf" target="_blank" rel="noopener">banque de sujets eduscol</a>, consulté le 15/11/2026.</li>
+      <li>J.-L. Vivens, <em>Les stocks</em>, Cerpeg, 1er juin 2006 (définition du stock de sécurité), <a href="https://cerpeg.ac-versailles.fr/IMG/pdf/stocks.pdf" target="_blank" rel="noopener">cerpeg.ac-versailles.fr</a>, consulté le 15/11/2026.</li>
+      <li><em>Cadencier de commande : maîtrisez quoi, quand et combien commander</em>, cse-infos.fr, 18 février 2026 (méthode de calcul de la quantité à commander), <a href="https://cse-infos.fr/entreprise/cadencier-de-commande-decider-quoi-commander-quand-et-en-quelle-quantite/" target="_blank" rel="noopener">cse-infos.fr</a>, consulté le 15/11/2026.</li>
+      <li>CAP Équipier polyvalent du commerce, <em>Grille d'évaluation EP1 – Réception et suivi des commandes</em> (compétence C1.1, indicateurs et niveaux 1 Novice à 4 Expert), mise en ligne par l'académie de Bordeaux, <a href="https://ent2d.ac-bordeaux.fr/disciplines/commerce-vente/wp-content/uploads/sites/15/2022/03/CAP-EPC_GRILLE-EVALUATION_PONCTUEL_EP1.pdf" target="_blank" rel="noopener">ac-bordeaux.fr</a>, consulté le 17/11/2026.</li>
+    </ul>
+    <p>Le magasin « Le Petit Panier », Mme Durand et tous les chiffres des exercices sont fictifs, créés pour ce cours.</p>
+    <p>Document conçu pour la classe de 1EPC1 – LEGER Isabelle, professeure d'Éco-Gestion.</p>
+  </div>
+</footer>
+
+<dialog id="dlgProf">
+  <form method="dialog" id="formProf">
+    <h3>🔒 Mode enseignante</h3>
+    <label for="codeProf">Code d'accès</label>
+    <input id="codeProf" type="password" autocomplete="off">
+    <p id="erreurCode" aria-live="polite"></p>
+    <div class="btns"><button class="b" type="submit" value="ok">Déverrouiller</button><button class="b sec" type="button" id="annulProf">Annuler</button></div>
+  </form>
+</dialog>
+
+<script>
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const calme=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* ================= XP (gagnés en TERMINANT les missions, pas en réussissant) ================= */
+let xp=0; const faits=new Set();
+const niveaux=[[0,'Stagiaire'],[60,'Équipier'],[130,'Équipier confirmé'],[200,'Chef de rayon 🏆']];
+const XP_MISSION={m1:10,m2:10,m3:10,m4:15,m5:15,m6:15,m7:15,m8:10,m9:20,m10:20,m11:10,m12:10,m13:20};
+const xpDe=k=>k.startsWith('q')?5:(XP_MISSION[k]||0);
+function majXP(){
+  $('#xp').textContent=xp;
+  const n=niveaux.filter(l=>xp>=l[0]).pop(), suiv=niveaux.find(l=>l[0]>xp);
+  const ancien=$('#niveau').textContent;
+  $('#niveau').textContent=n[1];
+  if(ancien!==n[1]){$('#niveau').classList.remove('saute');void $('#niveau').offsetWidth;$('#niveau').classList.add('saute');}
+  $('#jaugeXP').style.width=suiv?((xp-n[0])/(suiv[0]-n[0])*100)+'%':'100%';
+  $('#nbMissions').textContent=[...faits].filter(k=>/^m\d+$/.test(k)).length;
+}
+function popXP(p){const s=document.createElement('span');s.className='pop-xp';s.textContent='+'+p;$('.xp-total').appendChild(s);setTimeout(()=>s.remove(),1300);}
+function gagner(cle){
+  if(faits.has(cle))return;
+  faits.add(cle);const p=xpDe(cle);xp+=p;majXP();
+  if(pret){popXP(p);if(/^m\d+$/.test(cle))confettis();}
+}
+function secouer(el){el.classList.remove('secoue');void el.offsetWidth;el.classList.add('secoue');}
+function retour(box,txt,bien){const r=box.querySelector('.retour');if(!r)return;r.textContent=txt;r.classList.toggle('bien',!!bien);}
+
+/* ================= Confettis ================= */
+const cv=$('#confettis'),cx=cv.getContext('2d');let parts=[],anim=null;
+function confettis(){
+  if(calme)return;
+  cv.width=innerWidth;cv.height=innerHeight;
+  const cols=['#F2C94C','#1E7A4F','#C0392B','#2D6CDF','#C99B66'];
+  for(let i=0;i<90;i++)parts.push({x:innerWidth/2+(Math.random()-.5)*200,y:innerHeight*.35,vx:(Math.random()-.5)*12,vy:-Math.random()*12-4,r:Math.random()*360,vr:(Math.random()-.5)*12,c:cols[i%5],w:6+Math.random()*6,h:4+Math.random()*4,t:0});
+  if(!anim)boucle();
+}
+function boucle(){
+  cx.clearRect(0,0,cv.width,cv.height);
+  parts.forEach(p=>{p.vy+=.35;p.x+=p.vx;p.y+=p.vy;p.r+=p.vr;p.t++;cx.save();cx.translate(p.x,p.y);cx.rotate(p.r*Math.PI/180);cx.fillStyle=p.c;cx.fillRect(-p.w/2,-p.h/2,p.w,p.h);cx.restore();});
+  parts=parts.filter(p=>p.y<cv.height+20&&p.t<180);
+  anim=parts.length?requestAnimationFrame(boucle):(cx.clearRect(0,0,cv.width,cv.height),null);
+}
+
+/* ================= Flashcards ================= */
+const mots=[
+  ['📦 Le stock','Toutes les marchandises disponibles dans le magasin, en rayon et en réserve.'],
+  ['🚫 La rupture de stock','Le produit n\'est plus disponible : le stock est à zéro. Le client ne trouve pas son produit, la vente est perdue, il peut aller chez un concurrent.'],
+  ['🏔️ Le surstock','Beaucoup plus de produits que ce qu\'on vend : la réserve est encombrée, l\'argent est bloqué, les produits frais risquent de dépasser leur date.'],
+  ['🥁 La cadence des ventes','Le rythme auquel un produit se vend. Exemple : 20 paquets par semaine.'],
+  ['🎄 La saisonnalité','Les ventes changent selon la période de l\'année. Exemple : les chocolats avant Noël.'],
+  ['🛟 Le stock de sécurité','La quantité en dessous de laquelle il ne faut pas descendre. Elle protège de la rupture si les ventes augmentent ou si la livraison a du retard.']
+];
+mots.forEach(([m,d])=>{const b=document.createElement('button');b.className='flash';b.type='button';b.setAttribute('aria-pressed','false');
+  b.innerHTML=`<div class="in"><div class="face av"><b>${m}</b><small>Clique pour retourner</small></div><div class="face ar">${d}</div></div>`;
+  b.onclick=()=>b.setAttribute('aria-pressed',b.getAttribute('aria-pressed')==='true'?'false':'true');$('#flashs').appendChild(b);});
+
+/* ================= Réponses de l'élève (aucun retour juste / faux) ================= */
+const CLE_STOCKAGE='cadencier-1EPC1-leger-v3';
+const LETTRES=['S','C','L','V'];
+const SAISIES=['m2','m4','m5','m6','m8','m9','m10'];
+const UNITES={m1:4,m2:6,m3:5,m4:4,m5:3,m6:4,m7:5,m8:5,m9:6,m10:6,m11:6,m12:5,quiz:7};
+const ORDRE_UNITES=Object.keys(UNITES);
+const rep={m1:['','','',''],m3:Array(5).fill(''),m12:Array(5).fill(''),ordre:[],quiz:Array(7).fill(-1),ch:0,chJoue:false};
+let pret=false;
+function sauver(){
+  if(!pret)return;
+  const d={rep,faits:[...faits],
+    vals:$$('.exo input[data-rep]').map(c=>c.value),
+    marques:$$('#m7 td.cible button').map((b,i)=>b.classList.contains('marque')?i:-1).filter(i=>i>=0),
+    bonus:$('#m14 textarea').value,nom:$('#eleveNom').value.trim(),prenom:$('#elevePrenom').value.trim()};
+  try{localStorage.setItem(CLE_STOCKAGE,JSON.stringify(d));}catch(e){}
+}
+function changement(){majAvancement();sauver();}
+document.addEventListener('input',e=>{if(e.target.closest('.exo')||e.target.closest('.identite'))changement();});
+
+/* État de chaque question, calculé à partir des réponses : 0 non fait · 1 faux · 3 juste */
+function etats(){
+  const e={};
+  e.m1=LETTRES.map((k,i)=>rep.m1[i]?(rep.m1[i]===k?3:1):0);
+  SAISIES.forEach(id=>{e[id]=$$('#'+id+' input[data-rep]').map(c=>{const t=c.value.trim();if(!t)return 0;
+    const v=parseFloat(t.replace(',','.').replace(/\s/g,''));return v===parseFloat(c.dataset.rep)?3:1;});});
+  ['m3','m12'].forEach(id=>{e[id]=$$('#'+id+' .item').map((it,i)=>rep[id][i]?(rep[id][i]===it.dataset.rep?3:1):0);});
+  const cb=$$('#m7 td.cible button'),nbM=cb.filter(b=>b.classList.contains('marque')).length;
+  e.m7=cb.map(b=>nbM?(((b.dataset.faux==='1')===b.classList.contains('marque'))?3:1):0);
+  e.m11=Array.from({length:6},(_,i)=>rep.ordre[i]===undefined?0:(rep.ordre[i]===i?3:1));
+  e.quiz=quiz.map((q,i)=>rep.quiz[i]<0?0:(rep.quiz[i]===q.b?3:1));
+  return e;
+}
+function majAvancement(){
+  const e=etats();
+  Object.keys(XP_MISSION).forEach(m=>{
+    const fini=m==='m13'?rep.chJoue:m==='m7'?$$('#m7 td.cible button.marque').length===3:e[m].every(s=>s>0);
+    $('#'+m).classList.toggle('reussi',fini);
+    if(fini)gagner(m);
+  });
+  rep.quiz.forEach((c,i)=>{if(c>=0)gagner('q'+i);});
+}
+
+/* ----- Mission 1 : associations ----- */
+let selL=null;
+$$('#m1 .col-b button').forEach(b=>b.insertAdjacentHTML('afterbegin','<span class="badge">?</span>'));
+function renderAssoc(){
+  $$('#m1 .col-a button').forEach((a,i)=>{a.classList.toggle('lie',!!rep.m1[i]);a.classList.toggle('choisi',selL===i);});
+  $$('#m1 .col-b button').forEach(b=>{const i=rep.m1.indexOf(b.dataset.k);b.classList.toggle('lie',i>=0);b.querySelector('.badge').textContent=i>=0?LETTRES[i]:'?';});
+}
+$$('#m1 .col-a button').forEach((a,i)=>a.onclick=()=>{selL=selL===i?null:i;renderAssoc();retour($('#m1'),'');});
+$$('#m1 .col-b button').forEach(b=>b.onclick=()=>{
+  if(selL===null){retour($('#m1'),'Clique d\'abord sur une lettre.');return;}
+  rep.m1=rep.m1.map(v=>v===b.dataset.k?'':v);rep.m1[selL]=b.dataset.k;selL=null;
+  renderAssoc();retour($('#m1'),'Réponse enregistrée.');changement();
+});
+function solAssoc(box){
+  box.querySelectorAll('.col-b button').forEach(b=>{
+    const i=rep.m1.indexOf(b.dataset.k);
+    b.classList.add(i>=0&&LETTRES[i]===b.dataset.k?'bonne':'mauvaise');
+    if(!b.querySelector('.corr'))b.insertAdjacentHTML('beforeend',`<span class="corr">Bonne réponse : ${b.dataset.k}</span>`);
+  });
+}
+
+/* ----- Choix (vrai/faux, rupture/surstock) ----- */
+function renderChoix(id){$$('#'+id+' .item').forEach((it,i)=>it.querySelectorAll('.opts button').forEach(bt=>{const c=bt.dataset.val===rep[id][i];bt.classList.toggle('choisi',c);bt.setAttribute('aria-pressed',c);}));}
+['m3','m12'].forEach(id=>$$('#'+id+' .item').forEach((it,i)=>it.querySelectorAll('.opts button').forEach(bt=>bt.onclick=()=>{
+  rep[id][i]=bt.dataset.val;renderChoix(id);changement();
+})));
+function solChoix(box){box.querySelectorAll('.item').forEach((it,i)=>{
+  it.querySelector(`[data-val="${it.dataset.rep}"]`).classList.add('bon');
+  const ch=rep[box.id][i];if(ch&&ch!==it.dataset.rep)it.querySelector(`[data-val="${ch}"]`).classList.add('faux');
+  const e=it.querySelector('.explic');if(e)e.hidden=false;});}
+
+/* ----- Saisies ----- */
+function solSaisie(box){box.querySelectorAll('input[data-rep]').forEach(c=>{
+  const t=c.value.trim(),v=parseFloat(t.replace(',','.').replace(/\s/g,''));
+  c.classList.remove('ok','ko');c.classList.add(t&&v===parseFloat(c.dataset.rep)?'ok':'ko');});}
+
+/* ----- Chasse aux erreurs ----- */
+$$('td.cible button').forEach(b=>b.onclick=()=>{b.classList.toggle('marque');changement();});
+function solErreurs(box){box.querySelectorAll('td.cible button').forEach(b=>{
+  b.classList.add('revele',(b.dataset.faux==='1')===b.classList.contains('marque')?'bonne':'mauvaise');});}
+
+/* ----- Ordre ----- */
+const etapesOrdre=['Compter le stock (rayon + réserve) et le noter','Calculer les ventes de la semaine','Calculer la cadence moyenne','Calculer la quantité à commander','Arrondir au colis','Faire valider par le tuteur et transmettre la commande'];
+function initOrdre(){
+  const box=$('#m11'),pile=box.querySelector('.pile'),rp=box.querySelector('.reponse');
+  pile.innerHTML='';rp.innerHTML='';
+  etapesOrdre.map((t,i)=>[t,i]).sort(()=>Math.random()-.5).forEach(([t,i])=>{
+    const b=document.createElement('button');b.type='button';b.textContent=t;b.dataset.i=i;b.onclick=()=>{deplacer(b);lireOrdre();changement();};pile.appendChild(b);});
+}
+function deplacer(b){
+  const box=$('#m11'),pile=box.querySelector('.pile'),rp=box.querySelector('.reponse');
+  if(b.parentElement===pile){const li=document.createElement('li');li.appendChild(b);rp.appendChild(li);}
+  else{const li=b.parentElement;pile.appendChild(b);li.remove();}
+}
+function lireOrdre(){rep.ordre=$$('#m11 .reponse button').map(b=>+b.dataset.i);}
+function solOrdre(box){
+  box.querySelectorAll('.reponse button').forEach((b,i)=>b.classList.add(+b.dataset.i===i?'ok':'ko'));
+  $('#corrOrdre').innerHTML=etapesOrdre.map(t=>`<li>${t}</li>`).join('');
+}
+initOrdre();
+
+/* ----- Quiz ----- */
+const quiz=[
+  {q:"À quoi sert un cadencier ?",c:["À fixer les prix de vente","À suivre stocks, commandes, livraisons et ventes pour décider des commandes","À faire le planning des employés"],b:1,e:"Le cadencier suit chaque produit semaine après semaine pour savoir combien commander."},
+  {q:"Dans un cadencier, la lettre L signifie…",c:["Lundi","Livraison","Liste"],b:1,e:"S = stock, C = commande, L = livraison, V = ventes."},
+  {q:"Une rupture de stock, c'est…",c:["Quand le produit n'est plus disponible","Quand il y a trop de produits en réserve","Quand un colis est abîmé"],b:0,e:"Le stock est à zéro : le client ne trouve pas son produit et la vente est perdue."},
+  {q:"Stock du lundi : 15. Livraison : 12. Stock du lundi suivant : 10. Combien de produits vendus ?",c:["13","17","27"],b:1,e:"15 + 12 − 10 = 17."},
+  {q:"Ventes sur 4 semaines : 10, 14, 12, 16. Quelle est la cadence moyenne ?",c:["12","13","52"],b:1,e:"52 ÷ 4 = 13 par semaine."},
+  {q:"Il faut 26 produits. Le fournisseur livre par colis de 6. Que commandes-tu ?",c:["4 colis (24 produits)","5 colis (30 produits)","26 produits à l'unité"],b:1,e:"26 ÷ 6 = 4,33 : avec 4 colis il en manquerait 2, on prend 5 colis."},
+  {q:"Les chocolats se vendent de plus en plus avant Noël. C'est…",c:["La démarque","La saisonnalité","Le surstock"],b:1,e:"Les ventes changent selon la période de l'année : c'est la saisonnalité."}
+];
+quiz.forEach((it,i)=>{
+  const d=document.createElement('div');d.className='question';
+  d.innerHTML=`<p class="q">${i+1}. ${it.q}</p><div class="choix"></div><p class="explic" hidden></p>`;
+  const ch=d.querySelector('.choix');
+  it.c.forEach((txt,j)=>{const b=document.createElement('button');b.type='button';b.textContent=txt;
+    b.onclick=()=>{rep.quiz[i]=j;renderQuiz();changement();};ch.appendChild(b);});
+  $('#questions').appendChild(d);
+});
+function renderQuiz(){$$('#questions .question').forEach((d,i)=>[...d.querySelector('.choix').children].forEach((b,j)=>{const c=rep.quiz[i]===j;b.classList.toggle('choisi',c);b.setAttribute('aria-pressed',c);}));}
+function solQuiz(){$$('#questions .question').forEach((d,i)=>{const bs=d.querySelector('.choix').children;
+  bs[quiz[i].b].classList.add('bon');if(rep.quiz[i]>=0&&rep.quiz[i]!==quiz[i].b)bs[rep.quiz[i]].classList.add('faux');
+  const ex=d.querySelector('.explic');ex.textContent=quiz[i].e;ex.hidden=false;});}
+
+/* ----- Défi chrono (le nombre de calculs justes reste caché) ----- */
+let tChrono=null,reste=60,nbRep=0,justes=0,attendu=null;
+const rnd=(a,b)=>a+Math.floor(Math.random()*(b-a+1));
+function nouvelleQ(){
+  const S=rnd(5,40),L=rnd(0,6)*6,V=rnd(1,S+L),Sn=S+L-V;
+  if(Math.random()<.6){attendu=V;$('#qChrono').innerHTML=`S = <b>${S}</b> · L = <b>${L}</b> · Stock suivant = <b>${Sn}</b><br>Ventes = ?`;}
+  else{attendu=Sn;$('#qChrono').innerHTML=`S = <b>${S}</b> · L = <b>${L}</b> · V = <b>${V}</b><br>Stock suivant = ?`;}
+  $('#repChrono').value='';$('#repChrono').focus();
+}
+$('#goChrono').onclick=()=>{
+  clearInterval(tChrono);reste=60;nbRep=0;justes=0;$('#ptsChrono').textContent=0;$('#temps').textContent=60;
+  $('#repChrono').disabled=false;$('#valChrono').disabled=false;$('#goChrono').disabled=true;$('#retChrono').textContent='';
+  nouvelleQ();
+  tChrono=setInterval(()=>{reste--;$('#temps').textContent=reste;if(reste<=0)finChrono();},1000);
+};
+$('#formChrono').onsubmit=e=>{e.preventDefault();if(attendu===null||reste<=0)return;
+  if($('#repChrono').value.trim()==='')return;
+  const v=parseInt($('#repChrono').value,10);
+  nbRep++;if(v===attendu)justes++;
+  $('#ptsChrono').textContent=nbRep;$('#retChrono').textContent=`Réponse n° ${nbRep} enregistrée.`;$('#retChrono').className='retour';
+  nouvelleQ();};
+function finChrono(){
+  clearInterval(tChrono);$('#repChrono').disabled=true;$('#valChrono').disabled=true;$('#goChrono').disabled=false;$('#goChrono').textContent='Rejouer';attendu=null;
+  rep.ch=Math.max(rep.ch,justes);rep.chJoue=true;
+  $('#qChrono').textContent=`Temps écoulé ! Tu as donné ${nbRep} réponse(s).`;
+  $('#retChrono').textContent='Ton résultat est enregistré. Ta professeure verra ton meilleur essai.';
+  changement();
+}
+
+/* ================= Boutons Correction (mode enseignante uniquement) ================= */
+document.addEventListener('click',e=>{
+  if(e.target.closest('[data-reset]')){initOrdre();lireOrdre();changement();}
+  const s=e.target.closest('[data-sol]');
+  if(s&&!s.disabled&&document.body.classList.contains('mode-prof')){
+    if(s.dataset.sol==='quiz'){solQuiz();return;}
+    const box=document.getElementById(s.dataset.sol),t=box.dataset.type;
+    ({saisie:solSaisie,assoc:solAssoc,choix:solChoix,erreurs:solErreurs,ordre:solOrdre})[t]?.(box);
+    const c=box.querySelector('.correction');if(c)c.hidden=false;
+    retour(box,'Correction affichée (vert = bonne réponse, rouge = erreur de l\'élève).');
+  }
+});
+
+/* ================= Mode enseignante ================= */
+const HASH=446655125; /* empreinte du code enseignant (le code lui-même n'est pas écrit dans le fichier) */
+function h(s){let x=5381;for(const c of s)x=(((x<<5)+x)+c.codePointAt(0))>>>0;return x;}
+function activerProf(){
+  document.body.classList.add('mode-prof');
+  $$('[data-sol]').forEach(b=>{b.disabled=false;b.textContent=b.dataset.sol==='m14'?'Voir l\'exemple':'Voir la correction';});
+  $('#btnProf').textContent='🔓 Enseignante (quitter)';
+  try{sessionStorage.setItem('prof','1');}catch(e){}
+}
+function quitterProf(){
+  try{sessionStorage.removeItem('prof');}catch(e){}
+  sauver();location.reload();
+}
+$('#btnProf').onclick=()=>{
+  if(document.body.classList.contains('mode-prof')){quitterProf();return;}
+  $('#codeProf').value='';$('#erreurCode').textContent='';
+  if(typeof $('#dlgProf').showModal==='function')$('#dlgProf').showModal();
+  else{const c=prompt('Code enseignante :');if(c&&h(c.trim().toUpperCase())===HASH)activerProf();}
+};
+$('#annulProf').onclick=()=>$('#dlgProf').close();
+$('#formProf').onsubmit=e=>{
+  if(h($('#codeProf').value.trim().toUpperCase())===HASH){activerProf();}
+  else{e.preventDefault();$('#erreurCode').textContent='Code incorrect.';secouer($('#codeProf'));}
+};
+
+/* ================= Restauration du travail enregistré ================= */
+function restaurer(){
+  let d=null;try{d=JSON.parse(localStorage.getItem(CLE_STOCKAGE));}catch(e){}
+  if(!d||!d.rep)return;
+  const r=d.rep;
+  if(Array.isArray(r.m1)&&r.m1.length===4)rep.m1=r.m1.map(x=>LETTRES.includes(x)?x:'');
+  ['m3','m12'].forEach(k=>{if(Array.isArray(r[k])&&r[k].length===5)rep[k]=r[k].map(x=>typeof x==='string'?x:'');});
+  if(Array.isArray(r.quiz)&&r.quiz.length===7)rep.quiz=r.quiz.map(x=>Number.isInteger(x)&&x>=0&&x<3?x:-1);
+  rep.ch=Math.max(0,Math.min(255,r.ch|0));rep.chJoue=!!r.chJoue;
+  (d.faits||[]).forEach(f=>faits.add(f));xp=[...faits].reduce((s,k)=>s+xpDe(k),0);
+  const ins=$$('.exo input[data-rep]');(d.vals||[]).forEach((v,i)=>{if(ins[i]&&v)ins[i].value=v;});
+  const cb=$$('#m7 td.cible button');(d.marques||[]).forEach(i=>{if(cb[i])cb[i].classList.add('marque');});
+  (Array.isArray(r.ordre)?r.ordre:[]).forEach(i=>{const b=$(`#m11 .pile button[data-i="${+i}"]`);if(b)deplacer(b);});lireOrdre();
+  $('#m14 textarea').value=d.bonus||'';$('#eleveNom').value=d.nom||'';$('#elevePrenom').value=d.prenom||'';
+  if(rep.chJoue)$('#retChrono').textContent='Ton résultat est enregistré. Tu peux rejouer : ta professeure verra ton meilleur essai.';
+}
+
+/* ================= Code élève ================= */
+const SEL_CODE='LP-1EPC1-cadencier-LEGER';
+const NB_OCTETS_ETATS=Math.ceil(ORDRE_UNITES.reduce((s,k)=>s+UNITES[k],0)/4);
+function fnv(octets){let h=0x811c9dc5;for(const b of octets){h^=b;h=Math.imul(h,0x01000193)>>>0;}return h>>>0;}
+function versB64(u8){let s='';u8.forEach(b=>s+=String.fromCharCode(b));return btoa(s).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');}
+function deB64(t){t=t.replace(/-/g,'+').replace(/_/g,'/');while(t.length%4)t+='=';const s=atob(t);return Uint8Array.from(s,c=>c.charCodeAt(0));}
+const sansAccent=s=>s.normalize('NFD').replace(/[̀-ͯ]/g,'');
+const ident=()=>({nom:$('#eleveNom').value.trim(),prenom:$('#elevePrenom').value.trim()});
+function genererCode(){
+  const e=etats(),id=ident(),liste=[];ORDRE_UNITES.forEach(k=>liste.push(...e[k]));
+  const nomB=new TextEncoder().encode((id.nom.toUpperCase()+'|'+id.prenom).slice(0,62));
+  const o=[1];
+  const ts=Math.floor(Date.now()/60000);o.push(ts>>>24&255,ts>>>16&255,ts>>>8&255,ts&255);
+  o.push(Math.min(rep.ch,255));
+  for(let i=0;i<NB_OCTETS_ETATS;i++){let b=0;for(let j=0;j<4;j++)b|=(liste[i*4+j]||0)<<(j*2);o.push(b);}
+  o.push(nomB.length);nomB.forEach(b=>o.push(b));
+  const hh=fnv([...o,...new TextEncoder().encode(SEL_CODE)]);o.push(hh>>>24&255,hh>>>16&255,hh>>>8&255,hh&255);
+  return 'CAD1.'+versB64(Uint8Array.from(o));
+}
+function nomFichier(){const id=ident();return (sansAccent(id.nom).toUpperCase()+'_'+sansAccent(id.prenom)).replace(/[^A-Za-z0-9_-]+/g,'-')+'_cadencier.txt';}
+let dernierCode='';
+$('#btnCode').onclick=()=>{
+  sauver();const id=ident();
+  if(!id.nom||!id.prenom){$('#retCode').textContent='Écris ton NOM et ton prénom avant de générer ton code.';$('#retCode').className='retour';secouer(!id.nom?$('#eleveNom'):$('#elevePrenom'));return;}
+  dernierCode=genererCode();
+  $('#codeEleve').textContent=dernierCode;$('#nomDoc').textContent=nomFichier();$('#zoneCode').hidden=false;
+  const e=etats(),vides=ORDRE_UNITES.reduce((s,k)=>s+e[k].filter(x=>x===0).length,0)+(rep.chJoue?0:1);
+  const nbM=Object.keys(XP_MISSION).filter(m=>$('#'+m).classList.contains('reussi')).length;
+  $('#retCode').textContent=`✔ Code généré : ${nbM} mission(s) terminée(s) sur 13.`+(vides?` Attention, il te reste ${vides} question(s) sans réponse : tu peux les faire puis générer un nouveau code.`:' Télécharge ton document, puis dépose-le à l\'étape 2.');
+  $('#retCode').className='retour bien';
+};
+$('#btnTelecharger').onclick=()=>{
+  if(!dernierCode)return;const id=ident();
+  const L=['BILAN – Suivre les stocks avec le cadencier','CAP EPC – Classe 1EPC1 – Mme LEGER','',
+    'Élève : '+id.nom.toUpperCase()+' '+id.prenom,'Date : '+new Date().toLocaleString('fr-FR'),'',
+    'MON CODE (ne pas modifier) :',dernierCode,'',
+    'Ma réponse au Défi bonus :',$('#m14 textarea').value.trim()||'(pas de réponse)',''];
+  const blob=new Blob(['﻿'+L.join('\r\n')],{type:'text/plain;charset=utf-8'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=nomFichier();
+  document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},1500);
+};
+async function copier(txt,btn){
+  let ok=false;
+  try{await navigator.clipboard.writeText(txt);ok=true;}catch(e){
+    const t=document.createElement('textarea');t.value=txt;t.style.position='fixed';t.style.opacity='0';document.body.appendChild(t);t.select();
+    try{ok=document.execCommand('copy');}catch(_){}t.remove();}
+  const avant=btn.textContent;btn.textContent=ok?'✔ Copié !':'Copie impossible : sélectionne le texte à la main';setTimeout(()=>btn.textContent=avant,2000);
+}
+$('#btnCopierCode').onclick=e=>copier(dernierCode,e.currentTarget);
+let confirmEffacer=null;
+$('#btnEffacer').onclick=e=>{
+  const b=e.currentTarget;
+  if(!confirmEffacer){b.textContent='⚠️ Clique encore pour confirmer : tout sera effacé';confirmEffacer=setTimeout(()=>{b.textContent='🧹 Nouvel élève sur cet appareil (tout effacer)';confirmEffacer=null;},5000);return;}
+  try{localStorage.removeItem(CLE_STOCKAGE);}catch(_){}
+  pret=false;location.reload();
+};
+
+/* ================= Lecteur de codes (enseignante) =================
+   Barème sur 20 et répartition par indicateur de la compétence C1.1 : modifiables ci-dessous. */
+const BAREME={m1:1,m2:1.5,m3:1,m4:1.5,m5:1.5,m6:1,m7:1.5,m8:1,m9:2,m10:2,m11:1,m12:1,m13:0.5,quiz:3.5};
+const LIBELLES={m1:'Mission 1 – Associer S/C/L/V',m2:'Mission 2 – Je repère',m3:'Mission 3 – Vrai ou faux',m4:'Mission 4 – Ventes du lait',m5:'Mission 5 – Cases mystères',m6:'Mission 6 – Cadence moyenne',m7:'Mission 7 – Chasse aux erreurs',m8:'Mission 8 – Arrondi au colis',m9:'Mission 9 – Commande du lait',m10:'Mission 10 – Commande des pâtes',m11:'Mission 11 – Ordre des étapes',m12:'Mission 12 – Rupture ou surstock',m13:'Mission 13 – Défi chrono',quiz:'Quiz final'};
+const INDICATEURS=[
+  {t:'Connaissance du fonctionnement du cadencier de commande',p:[['m1'],['m2'],['m3'],['m4'],['m5'],['m7'],['quiz',[0,1,3]]]},
+  {t:'Évaluation correcte des quantités à commander (préparation des propositions de commandes)',p:[['m6'],['m8'],['m9'],['m10'],['m11'],['m13'],['quiz',[4,5]]]},
+  {t:'Vigilance concernant l\'état des stocks et anticipation pour éviter les ruptures',p:[['m12'],['quiz',[2,6]]]}
+];
+const SEUILS=[[85,4,'Expert'],[65,3,'Averti'],[40,2,'Débrouillé'],[0,1,'Novice']];
+const niveauDe=pc=>SEUILS.find(s=>pc>=s[0]);
+const fr=(n,d=1)=>n.toLocaleString('fr-FR',{minimumFractionDigits:0,maximumFractionDigits:d});
+const echap=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+function lireCode(code){
+  const u=deB64(code.slice(5));
+  if(u.length<1+4+1+NB_OCTETS_ETATS+1+4||u[0]!==1)throw new Error('format');
+  const corps=u.slice(0,u.length-4),fin=u.slice(u.length-4);
+  if(((fin[0]<<24|fin[1]<<16|fin[2]<<8|fin[3])>>>0)!==fnv([...corps,...new TextEncoder().encode(SEL_CODE)]))throw new Error('signature');
+  const ts=(u[1]<<24|u[2]<<16|u[3]<<8|u[4])>>>0;
+  const liste=[];for(let i=0;i<NB_OCTETS_ETATS;i++)for(let j=0;j<4;j++)liste.push(u[6+i]>>(j*2)&3);
+  const nl=u[6+NB_OCTETS_ETATS];
+  const nom=new TextDecoder().decode(u.slice(7+NB_OCTETS_ETATS,7+NB_OCTETS_ETATS+nl)).split('|');
+  const par={};let k=0;ORDRE_UNITES.forEach(m=>{par[m]=liste.slice(k,k+UNITES[m]);k+=UNITES[m];});
+  return {nom:nom[0]||'?',prenom:nom[1]||'',date:new Date(ts*60000),ch:u[5],par};
+}
+function pointsDe(r,m,indices){
+  if(m==='m13')return {obt:BAREME.m13*Math.min(r.ch,10)/10,max:BAREME.m13};
+  const a=r.par[m],idx=indices||a.map((_,i)=>i),pu=BAREME[m]/a.length;
+  return {obt:idx.reduce((s,i)=>s+(a[i]===3?pu:0),0),max:pu*idx.length};
+}
+function evaluer(r){
+  const missions=Object.keys(BAREME).map(m=>({m,...pointsDe(r,m)}));
+  const note=missions.reduce((s,x)=>s+x.obt,0),total=missions.reduce((s,x)=>s+x.max,0),pc=note/total*100;
+  const inds=INDICATEURS.map(ind=>{let o=0,mx=0;ind.p.forEach(([m,ix])=>{const p=pointsDe(r,m,ix);o+=p.obt;mx+=p.max;});const p2=mx?o/mx*100:0;return {t:ind.t,pc:p2,niv:niveauDe(p2)};});
+  return {missions,note:note/total*20,pc,niv:niveauDe(pc),inds};
+}
+function detailUnites(m,r){
+  if(m==='m13')return `${r.ch} calcul(s) juste(s) (meilleur essai)`;
+  const c=[0,0,0,0];r.par[m].forEach(s=>c[s]++);
+  return [c[3]&&`${c[3]} juste(s)`,c[1]&&`${c[1]} fausse(s)`,c[0]&&`${c[0]} sans réponse`].filter(Boolean).join(' · ');
+}
+const badge=n=>`<span class="niv niv${n[1]}">${n[1]} – ${n[2]}</span>`;
+let tsvClasse='';
+$('#btnLire').onclick=()=>{
+  const codes=[...new Set(($('#codesEleves').value.match(/CAD1\.[A-Za-z0-9_-]{20,}/g)||[]))];
+  const zone=$('#resultatsCodes');zone.innerHTML='';$('#btnCopierTab').hidden=true;
+  if(!codes.length){$('#retLire').textContent='Aucun code trouvé. Un code commence par CAD1.';$('#retLire').className='retour';return;}
+  const lignes=[],fiches=[],tsv=[['NOM','Prénom','Date du code','Note /20','Note arrondie au 0,5','% de réussite','C1.1 niveau',...INDICATEURS.map((x,i)=>'Indicateur '+(i+1)+' %')].join('\t')];
+  let nbInv=0;
+  codes.forEach(code=>{
+    let r;try{r=lireCode(code);}catch(e){nbInv++;lignes.push(`<tr><td class="g invalide" colspan="6">Code invalide ou modifié : ${echap(code.slice(0,24))}…</td></tr>`);return;}
+    const ev=evaluer(r),dt=r.date.toLocaleString('fr-FR',{dateStyle:'short',timeStyle:'short'}),arr=Math.round(ev.note*2)/2;
+    lignes.push(`<tr><td class="g"><strong>${echap(r.nom)}</strong> ${echap(r.prenom)}</td><td>${dt}</td><td><strong>${fr(ev.note)}</strong> (${fr(arr)})</td><td>${fr(ev.pc,0)} %</td><td>${badge(ev.niv)}</td><td>${ev.inds.map(x=>fr(x.pc,0)+' %').join(' · ')}</td></tr>`);
+    tsv.push([r.nom,r.prenom,dt,fr(ev.note),fr(arr),fr(ev.pc,0),ev.niv[1]+' – '+ev.niv[2],...ev.inds.map(x=>fr(x.pc,0))].join('\t'));
+    fiches.push(`<details class="fiche-eleve"><summary>${echap(r.nom)} ${echap(r.prenom)} : ${fr(ev.note)} / 20 · ${fr(ev.pc,0)} % · C1.1 ${badge(ev.niv)}</summary>
+      <div class="tab-scroll"><table><thead><tr><th>Activité</th><th>Points</th><th>Détail</th></tr></thead><tbody>
+      ${ev.missions.map(x=>`<tr><td class="g">${LIBELLES[x.m]}</td><td>${fr(x.obt,2)} / ${fr(x.max,2)}</td><td class="g">${detailUnites(x.m,r)}</td></tr>`).join('')}
+      <tr><td class="g"><strong>Total</strong></td><td><strong>${fr(ev.note,2)} / 20</strong></td><td class="g">Défi bonus : à lire dans le document de l'élève (non compté).</td></tr>
+      </tbody></table></div>
+      <div class="tab-scroll"><table><thead><tr><th>C1.1 Participer à la passation des commandes fournisseurs : indicateur</th><th>Réussite</th><th>Positionnement</th></tr></thead><tbody>
+      ${ev.inds.map(x=>`<tr><td class="g">${x.t}</td><td>${fr(x.pc,0)} %</td><td>${badge(x.niv)}</td></tr>`).join('')}
+      <tr><td class="g"><strong>Positionnement global C1.1</strong></td><td><strong>${fr(ev.pc,0)} %</strong></td><td>${badge(ev.niv)}</td></tr>
+      </tbody></table></div></details>`);
+  });
+  zone.innerHTML=`<div class="tab-scroll"><table class="res-classe"><thead><tr><th>Élève</th><th>Code généré le</th><th>Note /20 (arrondi 0,5)</th><th>% réussite</th><th>C1.1</th><th>Indicateurs 1 · 2 · 3</th></tr></thead><tbody>${lignes.join('')}</tbody></table></div>${fiches.join('')}`;
+  tsvClasse=tsv.join('\n');$('#btnCopierTab').hidden=codes.length===nbInv;
+  $('#retLire').textContent=`${codes.length-nbInv} code(s) lu(s)`+(nbInv?`, ${nbInv} invalide(s).`:'.');$('#retLire').className='retour bien';
+};
+$('#btnCopierTab').onclick=e=>copier(tsvClasse,e.currentTarget);
+$('#baremeTexte').innerHTML=`<p><strong>Note sur 20</strong> (le quiz compte 0,5 point par question) :</p><ul>${Object.keys(BAREME).map(m=>`<li>${LIBELLES[m]} : ${fr(BAREME[m])} pt</li>`).join('')}</ul>
+<p><strong>Dans chaque mission</strong>, les points sont répartis entre les questions : réponse juste = points de la question, réponse fausse ou absente = 0. Ce sont les réponses présentes au moment où l'élève génère son code qui comptent ; l'élève ne voit jamais si elles sont justes. Mission 7 : chaque case compte (case fausse bien repérée, ou case juste laissée non cochée). Défi chrono : points proportionnels au nombre de calculs justes du meilleur essai, plafonnés à 10. Le défi bonus n'est pas compté : sa réponse figure dans le document de l'élève.</p>
+<p><strong>Positionnement C1.1</strong> (échelle de la grille nationale EP1) selon le % de réussite : 85 % et plus = 4 Expert · 65 à 84 % = 3 Averti · 40 à 64 % = 2 Débrouillé · moins de 40 % = 1 Novice. Ces seuils et la répartition des missions par indicateur sont un choix pédagogique de ce cours, pas une règle officielle. Le positionnement est indicatif : les niveaux 3 et 4 de la grille portent aussi sur l'autonomie et l'initiative, qu'un exercice en ligne ne peut pas observer.</p>
+<p><strong>Si un élève envoie plusieurs codes</strong>, gardez le plus récent (date et heure affichées). Le code est protégé contre les modifications à la main.</p>`;
+
+/* ================= Démarrage ================= */
+restaurer();
+renderAssoc();renderChoix('m3');renderChoix('m12');renderQuiz();
+majAvancement();
+try{if(sessionStorage.getItem('prof')==='1')activerProf();}catch(e){}
+pret=true;
+majXP();
+</script>
+</body>
+</html>
